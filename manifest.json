@@ -1,0 +1,11 @@
+{
+  "domain": "isg_cooling",
+  "name": "LWZ Kühlbetrieb",
+  "version": "0.1.0",
+  "config_flow": true,
+  "iot_class": "local_polling",
+  "requirements": ["beautifulsoup4"],
+  "codeowners": [],
+  "documentation": "https://github.com/j4velin/isg_cooling",
+  "issue_tracker": "https://github.com/j4velin/isg_cooling/issues"
+}
