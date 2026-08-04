@@ -7,11 +7,13 @@
           "host": "Host / IP",
           "username": "Benutzername",
           "password": "Passwort",
-          "login_marker": "Login-Erfolgskennung"
+          "login_marker": "Login-Erfolgskennung",
+          "scan_interval": "Abfrageintervall (Stunden)"
         },
         "data_description": {
           "username": "Benutzername und Passwort leer lassen, wenn Ihr ISG keine Anmeldung erfordert. Die Anmeldung wird dann komplett übersprungen.",
-          "login_marker": "Text, der nach erfolgreicher Anmeldung auf der Seite erscheint. Hängt von der Sprache des ISG-Geräts ab. Standardwert nur ändern, wenn die Anmeldeerkennung fehlschlägt. Wird ignoriert, wenn keine Anmeldedaten gesetzt sind."
+          "login_marker": "Text, der nach erfolgreicher Anmeldung auf der Seite erscheint. Hängt von der Sprache des ISG-Geräts ab. Standardwert nur ändern, wenn die Anmeldeerkennung fehlschlägt. Wird ignoriert, wenn keine Anmeldedaten gesetzt sind.",
+          "scan_interval": "Wie oft Home Assistant den Kühlstatus vom ISG abfragt, in Stunden. Standard ist 24."
         }
       }
     },
