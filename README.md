@@ -11,6 +11,8 @@ This integration adds a single Home Assistant switch that reflects and controls 
 
 The integration communicates directly with the heat pump's local web interface and does not require any cloud service.
 
+> **Note:** This integration has so far only been tested with a **German** ISG interface and **Servicewelt version 12.2.3**. Other languages and Servicewelt versions may work but are untested. If your ISG is set to a different language, adjust the **Login success marker** field during setup (see [Configuration](#configuration)).
+
 ## Requirements
 
 - A **Stiebel Eltron LWZ** heat pump with an accessible **ISG / Servicewelt** interface
