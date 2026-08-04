@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to ISG",
+        "data": {
+          "host": "Host / IP",
+          "username": "Username",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Login failed",
+      "cannot_connect": "Connection failed"
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
+    }
+  }
+}
