@@ -15,7 +15,14 @@ from homeassistant.helpers.update_coordinator import (
     UpdateFailed,
 )
 
-from .const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, DOMAIN
+from .const import (
+    CONF_HOST,
+    CONF_LOGIN_MARKER,
+    CONF_PASSWORD,
+    CONF_USERNAME,
+    DOMAIN,
+    LOGIN_SUCCESS_MARKER,
+)
 from .isg_client import IsgAuthError, IsgConnectionError, IsgClient
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,7 +36,11 @@ async def async_setup_entry(
     data = entry.data
     session = async_get_clientsession(hass)
     client = IsgClient(
-        session, data[CONF_HOST], data[CONF_USERNAME], data[CONF_PASSWORD]
+        session,
+        data[CONF_HOST],
+        data[CONF_USERNAME],
+        data[CONF_PASSWORD],
+        data.get(CONF_LOGIN_MARKER, LOGIN_SUCCESS_MARKER),
     )
 
     async def _async_update_data():
@@ -54,7 +65,7 @@ class IsgCoolingSwitch(CoordinatorEntity, SwitchEntity):
     """represents the cooling switch in the Servicewelt (val73)."""
 
     _attr_has_entity_name = True
-    _attr_name = "Kühlbetrieb"
+    _attr_translation_key = "cooling"
     _attr_icon = "mdi:snowflake"
 
     def __init__(

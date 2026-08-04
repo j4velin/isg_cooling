@@ -1,0 +1,32 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to ISG",
+        "data": {
+          "host": "Host / IP",
+          "username": "Username",
+          "password": "Password",
+          "login_marker": "Login success marker"
+        },
+        "data_description": {
+          "login_marker": "Text that appears on the page after a successful login. Depends on the ISG device's language. Only change the default if login detection fails."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Login failed",
+      "cannot_connect": "Connection failed"
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
+    }
+  },
+  "entity": {
+    "switch": {
+      "cooling": {
+        "name": "Cooling"
+      }
+    }
+  }
+}

@@ -5,7 +5,14 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, DOMAIN
+from .const import (
+    CONF_HOST,
+    CONF_LOGIN_MARKER,
+    CONF_PASSWORD,
+    CONF_USERNAME,
+    DOMAIN,
+    LOGIN_SUCCESS_MARKER,
+)
 from .isg_client import IsgAuthError, IsgConnectionError, IsgClient
 
 DATA_SCHEMA = vol.Schema(
@@ -13,6 +20,7 @@ DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_HOST, default="isg.lan"): str,
         vol.Required(CONF_USERNAME): str,
         vol.Required(CONF_PASSWORD): str,
+        vol.Required(CONF_LOGIN_MARKER, default=LOGIN_SUCCESS_MARKER): str,
     }
 )
 
@@ -32,6 +40,7 @@ class IsgConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 user_input[CONF_HOST],
                 user_input[CONF_USERNAME],
                 user_input[CONF_PASSWORD],
+                user_input[CONF_LOGIN_MARKER],
             )
             try:
                 await client.async_login()
