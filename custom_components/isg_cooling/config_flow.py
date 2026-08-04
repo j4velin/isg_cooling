@@ -18,8 +18,8 @@ from .isg_client import IsgAuthError, IsgConnectionError, IsgClient
 DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_HOST, default="isg.lan"): str,
-        vol.Required(CONF_USERNAME): str,
-        vol.Required(CONF_PASSWORD): str,
+        vol.Optional(CONF_USERNAME, default=""): str,
+        vol.Optional(CONF_PASSWORD, default=""): str,
         vol.Required(CONF_LOGIN_MARKER, default=LOGIN_SUCCESS_MARKER): str,
     }
 )

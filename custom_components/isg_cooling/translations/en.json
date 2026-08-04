@@ -10,7 +10,8 @@
           "login_marker": "Login success marker"
         },
         "data_description": {
-          "login_marker": "Text that appears on the page after a successful login. Depends on the ISG device's language. Only change the default if login detection fails."
+          "username": "Leave username and password empty if your ISG does not require a login. The login request is then skipped entirely.",
+          "login_marker": "Text that appears on the page after a successful login. Depends on the ISG device's language. Only change the default if login detection fails. Ignored when no credentials are set."
         }
       }
     },
