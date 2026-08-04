@@ -4,6 +4,7 @@ CONF_HOST = "host"
 CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
 CONF_LOGIN_MARKER = "login_marker"
+CONF_SCAN_INTERVAL = "scan_interval"
 
 # Servicewelt path "EINSTELLUNGEN > KÜHLEN > KÜHLBETRIEB HK1"
 COOLING_PAGE_PATH = "?s=4,3,2"
@@ -17,3 +18,6 @@ VAL_COOLING = "val73"
 # which is why it is user-configurable (CONF_LOGIN_MARKER) with this value
 # as the default.
 LOGIN_SUCCESS_MARKER = "angemeldet als"
+
+# default polling interval (in hours) for reading the cooling state
+DEFAULT_SCAN_INTERVAL_HOURS = 24

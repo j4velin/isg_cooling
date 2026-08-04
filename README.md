@@ -52,6 +52,7 @@ Once installed via HACS, you will be notified of new releases and can update wit
    - **Username** *(optional — leave empty, together with the password, if your ISG does not require a login; the login request is then skipped entirely)*
    - **Password** *(optional)*
    - **Login success marker** *(defaults to `angemeldet als`; only change it if your ISG uses a different language)*
+   - **Poll interval (hours)** *(defaults to 24; how often the cooling state is read from the ISG)*
 4. Finish setup.
 
 ## Usage

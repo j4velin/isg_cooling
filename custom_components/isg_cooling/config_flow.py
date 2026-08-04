@@ -9,7 +9,9 @@ from .const import (
     CONF_HOST,
     CONF_LOGIN_MARKER,
     CONF_PASSWORD,
+    CONF_SCAN_INTERVAL,
     CONF_USERNAME,
+    DEFAULT_SCAN_INTERVAL_HOURS,
     DOMAIN,
     LOGIN_SUCCESS_MARKER,
 )
@@ -21,6 +23,9 @@ DATA_SCHEMA = vol.Schema(
         vol.Optional(CONF_USERNAME, default=""): str,
         vol.Optional(CONF_PASSWORD, default=""): str,
         vol.Required(CONF_LOGIN_MARKER, default=LOGIN_SUCCESS_MARKER): str,
+        vol.Required(
+            CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL_HOURS
+        ): vol.All(vol.Coerce(int), vol.Range(min=1)),
     }
 )
 
