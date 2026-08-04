@@ -126,7 +126,7 @@ class IsgClient:
         fields = dict(state.fields)
         fields[VAL_COOLING] = "1" if turn_on else "0"
 
-        url = self._base + "/save.php"
+        url = self._base + "save.php"
                 
         payload = "data=["
         for key, value in fields.items():
