@@ -17,5 +17,12 @@
     "abort": {
       "already_configured": "Gerät ist bereits eingerichtet"
     }
+  },
+  "entity": {
+    "switch": {
+      "cooling": {
+        "name": "Kühlbetrieb"
+      }
+    }
   }
 }

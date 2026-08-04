@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 
 import re
 
-from .const import COOLING_PAGE_PATH, VAL_COOLING
+from .const import COOLING_PAGE_PATH, LOGIN_SUCCESS_MARKER, VAL_COOLING
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class IsgClient:
         except aiohttp.ClientError as err:
             raise IsgConnectionError(f"Connection to {self._base} failed: {err}") from err
 
-        if "angemeldet als" not in text.lower():
+        if LOGIN_SUCCESS_MARKER not in text.lower():
             raise IsgAuthError(
                 "Login failed"
             )

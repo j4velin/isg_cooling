@@ -54,7 +54,7 @@ class IsgCoolingSwitch(CoordinatorEntity, SwitchEntity):
     """represents the cooling switch in the Servicewelt (val73)."""
 
     _attr_has_entity_name = True
-    _attr_name = "Kühlbetrieb"
+    _attr_translation_key = "cooling"
     _attr_icon = "mdi:snowflake"
 
     def __init__(
