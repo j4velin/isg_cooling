@@ -6,7 +6,11 @@
         "data": {
           "host": "Host / IP",
           "username": "Username",
-          "password": "Password"
+          "password": "Password",
+          "login_marker": "Login success marker"
+        },
+        "data_description": {
+          "login_marker": "Text that appears on the page after a successful login. Depends on the ISG device's language. Only change the default if login detection fails."
         }
       }
     },

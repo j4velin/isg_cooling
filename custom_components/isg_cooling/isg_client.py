@@ -38,11 +38,13 @@ class IsgClient:
         host: str,
         username: str,
         password: str,
+        login_marker: str = LOGIN_SUCCESS_MARKER,
     ) -> None:
         self._session = session
         self._base = f"http://{host.rstrip('/')}/"
         self._username = username
         self._password = password
+        self._login_marker = login_marker
         self._logged_in = False
 
     async def async_login(self) -> None:
@@ -57,7 +59,7 @@ class IsgClient:
         except aiohttp.ClientError as err:
             raise IsgConnectionError(f"Connection to {self._base} failed: {err}") from err
 
-        if LOGIN_SUCCESS_MARKER not in text.lower():
+        if self._login_marker.lower() not in text.lower():
             raise IsgAuthError(
                 "Login failed"
             )
