@@ -49,8 +49,9 @@ Once installed via HACS, you will be notified of new releases and can update wit
 2. Search for **LWZ Kühlbetrieb**.
 3. Enter:
    - **Host**: the ISG hostname or IP address
-   - **Username**
-   - **Password**
+   - **Username** *(optional — leave empty, together with the password, if your ISG does not require a login; the login request is then skipped entirely)*
+   - **Password** *(optional)*
+   - **Login success marker** *(defaults to `angemeldet als`; only change it if your ISG uses a different language)*
 4. Finish setup.
 
 ## Usage

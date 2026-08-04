@@ -48,7 +48,13 @@ class IsgClient:
         self._logged_in = False
 
     async def async_login(self) -> None:
-        """login"""
+        """login (skipped when no credentials are configured)"""
+        if not self._username and not self._password:
+            # no credentials configured -> the Servicewelt is used without a
+            # login, so skip the login request entirely.
+            self._logged_in = True
+            return
+
         payload = {
             "user": self._username,
             "pass": self._password,
