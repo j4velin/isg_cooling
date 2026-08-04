@@ -2,6 +2,8 @@
 
 Home Assistant custom integration for controlling the **cooling** setting of a **Stiebel Eltron LWZ** heat pump via the device's ISG / Servicewelt web interface.
 
+> **Looking for general Stiebel Eltron ISG support?** For broad monitoring and control of Stiebel Eltron ISG heat pumps, use the excellent [**pail23/stiebel_eltron_isg_component**](https://github.com/pail23/stiebel_eltron_isg_component) integration. It covers ISG functionality extensively but does **not** expose the cooling toggle for **LWZ**-type heat pumps — that gap is exactly what this integration fills. The two can be installed side by side.
+
 ## What it does
 
 This integration adds a single Home Assistant switch that reflects and controls the cooling mode of the heat pump.
@@ -17,7 +19,7 @@ The integration communicates directly with the heat pump's local web interface a
 
 - A **Stiebel Eltron LWZ** heat pump with an accessible **ISG / Servicewelt** interface
 - The IP address or hostname of the ISG device
-- A valid username and password for the ISG web interface
+- Optionally, a username and password for the ISG web interface (only if your ISG requires a login)
 - Home Assistant with support for custom integrations
 
 ## Installation
@@ -25,6 +27,12 @@ The integration communicates directly with the heat pump's local web interface a
 ### Option A — HACS (recommended)
 
 This repository is a valid [HACS](https://hacs.xyz/) custom repository.
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=j4velin&repository=isg_cooling&category=integration)
+
+Click the button above to open this repository in HACS, then click **Download** and **restart Home Assistant**. Afterwards continue with [Configuration](#configuration).
+
+To add it manually instead:
 
 1. Make sure [HACS is installed](https://hacs.xyz/docs/use/download/download/) in your Home Assistant instance.
 2. In Home Assistant, go to **HACS**.
