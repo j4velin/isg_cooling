@@ -20,15 +20,36 @@ The integration communicates directly with the heat pump's local web interface a
 
 ## Installation
 
-1. Copy the `isg_cooling` folder into your Home Assistant `custom_components/` directory.
+### Option A — HACS (recommended)
+
+This repository is a valid [HACS](https://hacs.xyz/) custom repository.
+
+1. Make sure [HACS is installed](https://hacs.xyz/docs/use/download/download/) in your Home Assistant instance.
+2. In Home Assistant, go to **HACS**.
+3. Open the **⋮** (top-right) menu and choose **Custom repositories**.
+4. Add the repository:
+   - **Repository**: `https://github.com/j4velin/isg_cooling`
+   - **Type**: `Integration`
+5. Click **Add**, then search for **LWZ Kühlbetrieb (ISG Cooling)** in HACS and click **Download**.
+6. **Restart Home Assistant.**
+7. Go to **Settings** → **Devices & services** → **Add integration** and continue with the configuration steps below.
+
+Once installed via HACS, you will be notified of new releases and can update with a single click.
+
+### Option B — Manual installation
+
+1. Copy the `custom_components/isg_cooling` folder from this repository into your Home Assistant `config/custom_components/` directory, so that the final path is `config/custom_components/isg_cooling/`.
 2. Restart Home Assistant.
-3. In Home Assistant, go to **Settings** → **Devices & services** → **Add integration**.
-4. Search for **LWZ Kühlbetrieb**.
-5. Enter:
+
+### Configuration
+
+1. In Home Assistant, go to **Settings** → **Devices & services** → **Add integration**.
+2. Search for **LWZ Kühlbetrieb**.
+3. Enter:
    - **Host**: the ISG hostname or IP address
    - **Username**
    - **Password**
-6. Finish setup.
+4. Finish setup.
 
 ## Usage
 

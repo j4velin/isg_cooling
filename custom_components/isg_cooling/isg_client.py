@@ -103,6 +103,8 @@ class IsgClient:
                         for line in script.string.splitlines():
                             if search in line:
                                 match = re.search(r"='(.+)';", line)
+                                if match is None:
+                                    continue
                                 value = match.group(1)
                                 fields[name] = value
                 
