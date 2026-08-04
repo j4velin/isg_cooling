@@ -41,7 +41,7 @@ async def async_setup_entry(
     coordinator = DataUpdateCoordinator(
         hass,
         _LOGGER,
-        name=f"isg_cooling",
+        name="isg_cooling",
         update_method=_async_update_data,
         update_interval=SCAN_INTERVAL,
     )

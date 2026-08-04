@@ -103,6 +103,8 @@ class IsgClient:
                         for line in script.string.splitlines():
                             if search in line:
                                 match = re.search(r"='(.+)';", line)
+                                if match is None:
+                                    continue
                                 value = match.group(1)
                                 fields[name] = value
                 
@@ -124,7 +126,7 @@ class IsgClient:
         fields = dict(state.fields)
         fields[VAL_COOLING] = "1" if turn_on else "0"
 
-        url = self._base + "/save.php"
+        url = self._base + "save.php"
                 
         payload = "data=["
         for key, value in fields.items():
