@@ -1,4 +1,4 @@
-# isg_cooling
+# LWZ Kühlbetrieb (ISG Cooling)
 
 Home Assistant custom integration for controlling the **cooling** setting of a **Stiebel Eltron LWZ** heat pump via the device's ISG / Servicewelt web interface.
 
