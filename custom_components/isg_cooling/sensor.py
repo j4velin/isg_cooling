@@ -12,7 +12,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfEnergy
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -26,7 +26,11 @@ from homeassistant.helpers.update_coordinator import (
 from homeassistant.util import dt as dt_util
 
 from . import get_option
-from .consumption_total import DAILY_READING_TIME, CoolingConsumptionTotal
+from .consumption_total import (
+    DAILY_READING_HOUR,
+    DAILY_READING_MINUTES,
+    CoolingConsumptionTotal,
+)
 from .const import (
     CONF_CONSUMPTION_SCAN_INTERVAL,
     CONF_HOST,
@@ -97,13 +101,27 @@ async def async_setup_entry(
     )
 
 
-class IsgCoolingConsumptionSensor(CoordinatorEntity, SensorEntity):
+class IsgCoolingConsumptionSensor(SensorEntity):
     """cooling row of LEISTUNGSAUFNAHME in the Servicewelt."""
 
     _attr_has_entity_name = True
     _attr_icon = "mdi:snowflake"
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+
+
+class IsgCoolingConsumption24hSensor(CoordinatorEntity, IsgCoolingConsumptionSensor):
+    """KÜHLEN 1-24 h, the last 24 hours, updated hourly by the ISG.
+
+    No state class: the window goes up and down, so neither "total" nor
+    "total_increasing" gives correct statistics. Disabled by default, the
+    total covers everything except the consumption within a day. The
+    coordinator only polls while this sensor is enabled.
+    """
+
+    _attr_translation_key = "cooling_consumption_24h"
+    _attr_suggested_display_precision = 3
+    _attr_entity_registry_enabled_default = False
 
     def __init__(
         self,
@@ -112,19 +130,6 @@ class IsgCoolingConsumptionSensor(CoordinatorEntity, SensorEntity):
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_{self._attr_translation_key}"
-
-
-class IsgCoolingConsumption24hSensor(IsgCoolingConsumptionSensor):
-    """KÜHLEN 1-24 h, the last 24 hours, updated hourly by the ISG.
-
-    No state class: the window goes up and down, so neither "total" nor
-    "total_increasing" gives correct statistics. Disabled by default, the
-    total covers everything except the consumption within a day.
-    """
-
-    _attr_translation_key = "cooling_consumption_24h"
-    _attr_suggested_display_precision = 3
-    _attr_entity_registry_enabled_default = False
 
     @property
     def native_value(self) -> float | None:
@@ -135,7 +140,8 @@ class IsgCoolingConsumptionTotalSensor(IsgCoolingConsumptionSensor, RestoreSenso
     """lifetime total, the ISG has no such value - see consumption_total.py
 
     Use this one for the energy dashboard. It changes once a day, shortly
-    after midnight.
+    after midnight. Not a coordinator listener, so it doesn't keep the
+    coordinator polling: it fetches the page itself for the daily reading.
     """
 
     _attr_translation_key = "cooling_consumption_total"
@@ -147,7 +153,8 @@ class IsgCoolingConsumptionTotalSensor(IsgCoolingConsumptionSensor, RestoreSenso
         coordinator: DataUpdateCoordinator[IsgCoolingConsumption],
         entry: ConfigEntry,
     ) -> None:
-        super().__init__(coordinator, entry)
+        self._coordinator = coordinator
+        self._attr_unique_id = f"{entry.entry_id}_{self._attr_translation_key}"
         self._total = CoolingConsumptionTotal()
 
     async def async_added_to_hass(self) -> None:
@@ -157,28 +164,30 @@ class IsgCoolingConsumptionTotalSensor(IsgCoolingConsumptionSensor, RestoreSenso
             restored = CoolingConsumptionTotal.from_dict(extra.as_dict())
             if restored is not None:
                 self._total = restored
-        self._update_total()
+        # the reading of the setup, in case Home Assistant starts at night
+        self._update_total(self._coordinator.data)
         self.async_on_remove(
             async_track_time_change(
                 self.hass,
-                self._async_daily_refresh,
-                hour=DAILY_READING_TIME.hour,
-                minute=DAILY_READING_TIME.minute,
+                self._async_daily_reading,
+                hour=DAILY_READING_HOUR,
+                minute=DAILY_READING_MINUTES,
                 second=0,
             )
         )
 
-    async def _async_daily_refresh(self, now: datetime) -> None:
-        """make sure there is a reading for the daily total"""
-        await self.coordinator.async_request_refresh()
+    async def _async_daily_reading(self, now: datetime) -> None:
+        """fetch the page for the daily reading, retried until it worked"""
+        if self._total.is_read(dt_util.now()):
+            return
+        await self._coordinator.async_refresh()
+        if self._coordinator.last_update_success:
+            self._update_total(self._coordinator.data)
+            self.async_write_ha_state()
 
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        self._update_total()
-        super()._handle_coordinator_update()
-
-    def _update_total(self) -> None:
-        data = self.coordinator.data
+    def _update_total(self, data: IsgCoolingConsumption | None) -> None:
+        if data is None:
+            return
         self._total.update(
             data.last_24h, data.last_12m, data.last_prev_12m, dt_util.now()
         )

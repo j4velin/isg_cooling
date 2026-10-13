@@ -16,8 +16,10 @@ from datetime import datetime, time
 # updated the 1-24 h value at midnight and before its next update
 DAILY_READING_START = time(0, 10)
 DAILY_READING_END = time(1, 0)
-# extra refresh for the daily reading, independent of the poll interval
-DAILY_READING_TIME = time(0, 15)
+# times of the daily reading (local time), independent of the poll interval;
+# the later ones are retries in case the ISG couldn't be read
+DAILY_READING_HOUR = 0
+DAILY_READING_MINUTES = (15, 25, 35, 45, 55)
 
 # stored data of an older version is discarded and the total seeded again
 STORAGE_VERSION = 2
@@ -36,6 +38,10 @@ class CoolingConsumptionTotal:
         if self.base is None:
             return None
         return round(self.base, 3)
+
+    def is_read(self, now: datetime) -> bool:
+        """True if the daily reading of this day is done"""
+        return self.day == now.date().isoformat()
 
     def update(
         self,

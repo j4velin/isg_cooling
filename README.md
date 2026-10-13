@@ -22,7 +22,7 @@ Not every heat pump / ISG version shows these values; if they are missing, the 1
 
 #### How the total is calculated
 
-The ISG only shows the consumption of the last 24 hours, the last 12 months and the 12 months before (13-24 M). The total starts at *1-12 M + 13-24 M*, read at 00:15 after the sensor was created; until then it is *unknown*. This matches the real lifetime consumption only if the heat pump is less than 24 months old; otherwise older consumption is missing. From then on, the 1-24 h value is added once a day: at 00:15 the integration reads it (in addition to the regular polling), and it then contains exactly the 24 hours before midnight. Reading the window once every 24 hours means the periods neither overlap nor leave gaps, so nothing is counted twice or lost. The total is stored across Home Assistant restarts. If the ISG cannot be read between 00:10 and 01:00, e.g. because Home Assistant is offline, the consumption of the previous day is missing from the total.
+The ISG only shows the consumption of the last 24 hours, the last 12 months and the 12 months before (13-24 M). The total starts at *1-12 M + 13-24 M*, read at 00:15 after the sensor was created; until then it is *unknown*. This matches the real lifetime consumption only if the heat pump is less than 24 months old; otherwise older consumption is missing. From then on, the 1-24 h value is added once a day: at 00:15 the integration reads it, independent of the regular polling (and again every 10 minutes until 00:55 if the ISG cannot be read), and it then contains exactly the 24 hours before midnight. Reading the window once every 24 hours means the periods neither overlap nor leave gaps, so nothing is counted twice or lost. The total is stored across Home Assistant restarts. If the ISG cannot be read between 00:10 and 01:00, e.g. because Home Assistant is offline, the consumption of the previous day is missing from the total.
 
 The integration communicates directly with the heat pump's local web interface and does not require any cloud service.
 
@@ -74,7 +74,7 @@ Once installed via HACS, you will be notified of new releases and can update wit
    - **Password** *(optional)*
    - **Login success marker** *(defaults to `angemeldet als`; the German and English markers are always recognized, so only change it if your ISG uses another language)*
    - **Poll interval (hours)** *(defaults to 24; how often the cooling state is read from the ISG)*
-   - **Power consumption poll interval (minutes)** *(defaults to 10; how often the 1-24 h sensor is read from the ISG, which updates it hourly. The total does not depend on it; see [How the total is calculated](#how-the-total-is-calculated))*
+   - **Power consumption poll interval (minutes)** *(defaults to 10; how often the 1-24 h sensor is read from the ISG, which updates it hourly. The ISG is only polled while that sensor is enabled; the total does not depend on it; see [How the total is calculated](#how-the-total-is-calculated))*
 4. Finish setup.
 
 Both poll intervals can be changed later: go to **Settings** → **Devices & services** → **LWZ Kühlbetrieb** and click **Configure**. The integration reloads with the new intervals; the cooling power consumption total is kept.
