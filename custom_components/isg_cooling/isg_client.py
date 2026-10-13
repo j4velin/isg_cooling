@@ -10,15 +10,12 @@ from bs4 import BeautifulSoup
 import re
 
 from .const import (
-    CONSUMPTION_TABLE_TITLES,
     COOLING_PAGE_PATH,
     ENERGY_PAGE_PATH,
-    KEYS_COOLING_12M,
-    KEYS_COOLING_24H,
-    KEYS_COOLING_PREV_12M,
-    KNOWN_LOGIN_SUCCESS_MARKERS,
+    ISG_TEXTS,
     LOGIN_SUCCESS_MARKER,
     VAL_COOLING,
+    IsgTexts,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -68,11 +65,12 @@ def _normalize_key(text: str) -> str:
     return re.sub(r"\s+", "", text).replace("–", "-").upper()
 
 
-def _first(values: dict[str, float | None], keys: tuple[str, ...]) -> float | None:
-    """value of the first key found (one key per device language)"""
-    for key in keys:
-        if key in values:
-            return values[key]
+def _texts_for_consumption_table(title: str) -> IsgTexts | None:
+    """the language whose power consumption table has this title"""
+    title = title.upper()
+    for texts in ISG_TEXTS.values():
+        if title in texts.consumption_table_titles:
+            return texts
     return None
 
 
@@ -99,11 +97,10 @@ class IsgClient:
         return bool(self._username or self._password)
 
     def _is_logged_in(self, html: str) -> bool:
+        """configured marker or the marker of any known language"""
         html = html.lower()
-        return any(
-            marker in html
-            for marker in (self._login_marker.lower(), *KNOWN_LOGIN_SUCCESS_MARKERS)
-        )
+        markers = (self._login_marker, *(t.login_marker for t in ISG_TEXTS.values()))
+        return any(marker.lower() in html for marker in markers)
 
     async def async_login(self) -> None:
         """login (skipped when no credentials are configured)"""
@@ -195,11 +192,13 @@ class IsgClient:
         soup = BeautifulSoup(html, "html.parser")
 
         values: dict[str, float | None] | None = None
+        texts: IsgTexts | None = None
         for table in soup.find_all("table", class_="info"):
             header = table.find("th")
             if header is None:
                 continue
-            if header.get_text(strip=True).upper() not in CONSUMPTION_TABLE_TITLES:
+            texts = _texts_for_consumption_table(header.get_text(strip=True))
+            if texts is None:
                 continue
             values = {}
             for row in table.find_all("tr"):
@@ -212,15 +211,16 @@ class IsgClient:
                 )
             break
 
-        if values is None:
+        if values is None or texts is None:
             raise IsgConnectionError(
-                "Table 'LEISTUNGSAUFNAHME' not found - session expired?"
+                "Power consumption table not found - session expired or "
+                "unknown ISG language?"
             )
         # not every heat pump / ISG version shows the cooling rows
         return IsgCoolingConsumption(
-            last_24h=_first(values, KEYS_COOLING_24H),
-            last_12m=_first(values, KEYS_COOLING_12M),
-            last_prev_12m=_first(values, KEYS_COOLING_PREV_12M),
+            last_24h=values.get(texts.key_cooling_24h),
+            last_12m=values.get(texts.key_cooling_12m),
+            last_prev_12m=values.get(texts.key_cooling_prev_12m),
         )
 
     async def async_get_cooling_state(self) -> bool:
