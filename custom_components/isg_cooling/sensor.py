@@ -5,21 +5,25 @@ import logging
 from datetime import timedelta
 
 from homeassistant.components.sensor import (
+    RestoreSensor,
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfEnergy
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.restore_state import RestoredExtraData
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
     UpdateFailed,
 )
+from homeassistant.util import dt as dt_util
 
+from .consumption_total import CoolingConsumptionTotal
 from .const import (
     CONF_HOST,
     CONF_LOGIN_MARKER,
@@ -71,6 +75,7 @@ async def async_setup_entry(
         [
             IsgCoolingConsumption24hSensor(coordinator, entry),
             IsgCoolingConsumption12mSensor(coordinator, entry),
+            IsgCoolingConsumptionTotalSensor(coordinator, entry),
         ]
     )
 
@@ -114,3 +119,47 @@ class IsgCoolingConsumption12mSensor(IsgCoolingConsumptionSensor):
     @property
     def native_value(self) -> float | None:
         return self.coordinator.data.last_12m
+
+
+class IsgCoolingConsumptionTotalSensor(IsgCoolingConsumptionSensor, RestoreSensor):
+    """lifetime total, the ISG has no such value - see consumption_total.py"""
+
+    _attr_translation_key = "cooling_consumption_total"
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_suggested_display_precision = 3
+
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator[IsgCoolingConsumption],
+        entry: ConfigEntry,
+    ) -> None:
+        super().__init__(coordinator, entry)
+        self._total = CoolingConsumptionTotal()
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        extra = await self.async_get_last_extra_data()
+        if extra is not None:
+            restored = CoolingConsumptionTotal.from_dict(extra.as_dict())
+            if restored is not None:
+                self._total = restored
+        self._update_total()
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        self._update_total()
+        super()._handle_coordinator_update()
+
+    def _update_total(self) -> None:
+        data = self.coordinator.data
+        self._total.update(
+            data.last_24h, data.last_12m, data.last_prev_12m, dt_util.now()
+        )
+
+    @property
+    def native_value(self) -> float | None:
+        return self._total.value
+
+    @property
+    def extra_restore_state_data(self) -> RestoredExtraData:
+        return RestoredExtraData(self._total.as_dict())

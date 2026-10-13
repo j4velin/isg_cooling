@@ -15,6 +15,7 @@ from .const import (
     ENERGY_PAGE_PATH,
     KEY_COOLING_12M,
     KEY_COOLING_24H,
+    KEY_COOLING_PREV_12M,
     LOGIN_SUCCESS_MARKER,
     VAL_COOLING,
 )
@@ -44,6 +45,7 @@ class IsgCoolingConsumption:
 
     last_24h: float | None
     last_12m: float | None
+    last_prev_12m: float | None
 
 
 def _parse_energy(text: str) -> float | None:
@@ -202,6 +204,7 @@ class IsgClient:
         return IsgCoolingConsumption(
             last_24h=values.get(KEY_COOLING_24H),
             last_12m=values.get(KEY_COOLING_12M),
+            last_prev_12m=values.get(KEY_COOLING_PREV_12M),
         )
 
     async def async_get_cooling_state(self) -> bool:

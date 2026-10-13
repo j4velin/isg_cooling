@@ -21,6 +21,7 @@ CONSUMPTION_TABLE_TITLES = ("LEISTUNGSAUFNAHME", "STROMVERBRAUCH")
 # normalized row keys in the power consumption table
 KEY_COOLING_24H = "KÜHLEN1-24H"
 KEY_COOLING_12M = "KÜHLEN1-12M"
+KEY_COOLING_PREV_12M = "KÜHLEN13-24M"
 
 # polling interval for the power consumption sensors
 CONSUMPTION_SCAN_INTERVAL_MINUTES = 5

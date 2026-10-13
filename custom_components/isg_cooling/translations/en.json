@@ -32,6 +32,9 @@
       },
       "cooling_consumption_12m": {
         "name": "Cooling power consumption 1-12 M"
+      },
+      "cooling_consumption_total": {
+        "name": "Cooling power consumption total"
       }
     },
     "switch": {
