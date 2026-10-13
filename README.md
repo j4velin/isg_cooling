@@ -76,6 +76,8 @@ Once installed via HACS, you will be notified of new releases and can update wit
    - **Power consumption poll interval (minutes)** *(defaults to 10; how often the power consumption sensors are read from the ISG. A shorter interval loses less consumption at midnight for the total; see [How the total is calculated](#how-the-total-is-calculated))*
 4. Finish setup.
 
+Both poll intervals can be changed later: go to **Settings** → **Devices & services** → **LWZ Kühlbetrieb** and click **Configure**. The integration reloads with the new intervals; the cooling power consumption total is kept.
+
 ## Usage
 
 After setup, Home Assistant will expose a switch named **Kühlbetrieb**.
