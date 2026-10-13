@@ -4,9 +4,8 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.core import callback
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from . import get_option
+from . import async_create_isg_session, create_client, get_option
 from .const import (
     CONF_CONSUMPTION_SCAN_INTERVAL,
     CONF_HOST,
@@ -19,7 +18,7 @@ from .const import (
     DOMAIN,
     LOGIN_SUCCESS_MARKER,
 )
-from .isg_client import IsgAuthError, IsgConnectionError, IsgClient
+from .isg_client import IsgAuthError, IsgConnectionError
 
 
 def _interval_fields(scan_interval: int, consumption_scan_interval: int) -> dict:
@@ -39,7 +38,11 @@ DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_HOST, default="isg.lan"): str,
         vol.Optional(CONF_USERNAME, default=""): str,
         vol.Optional(CONF_PASSWORD, default=""): str,
-        vol.Required(CONF_LOGIN_MARKER, default=LOGIN_SUCCESS_MARKER): str,
+        # an empty marker would be found on every page, so a failed login
+        # would go unnoticed
+        vol.Required(CONF_LOGIN_MARKER, default=LOGIN_SUCCESS_MARKER): vol.All(
+            str, vol.Length(min=1)
+        ),
         **_interval_fields(
             DEFAULT_SCAN_INTERVAL_HOURS, DEFAULT_CONSUMPTION_SCAN_INTERVAL_MINUTES
         ),
@@ -63,16 +66,12 @@ class IsgConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            session = async_get_clientsession(self.hass)
-            client = IsgClient(
-                session,
-                user_input[CONF_HOST],
-                user_input[CONF_USERNAME],
-                user_input[CONF_PASSWORD],
-                user_input[CONF_LOGIN_MARKER],
-            )
+            session = async_create_isg_session(self.hass)
+            client = create_client(session, user_input)
             try:
-                await client.async_login()
+                # read the cooling page instead of only logging in: this also
+                # checks the host when no credentials are set (no login then)
+                await client.async_get_cooling_state()
             except IsgAuthError:
                 errors["base"] = "invalid_auth"
             except IsgConnectionError:
@@ -84,6 +83,8 @@ class IsgConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     title=f"ISG Cooling ({user_input[CONF_HOST]})",
                     data=user_input,
                 )
+            finally:
+                await session.close()
 
         return self.async_show_form(
             step_id="user", data_schema=DATA_SCHEMA, errors=errors

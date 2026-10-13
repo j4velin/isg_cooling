@@ -1,6 +1,8 @@
 """http client for the Stiebel Eltron HTTP-Servicewelt"""
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
 from dataclasses import dataclass
 
@@ -19,6 +21,9 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# per request; the ISG answers within a few seconds
+REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=30)
 
 
 class IsgAuthError(Exception):
@@ -63,6 +68,26 @@ def _parse_energy(text: str) -> float | None:
 def _normalize_key(text: str) -> str:
     """'KÜHLEN 1–24 h' -> 'KÜHLEN1-24H'"""
     return re.sub(r"\s+", "", text).replace("–", "-").upper()
+
+
+def _check_save_answer(answer: str) -> None:
+    """save.php answers with JSON: success, warning or errors per field"""
+    try:
+        result = json.loads(answer)
+    except ValueError as err:
+        raise IsgConnectionError(
+            f"Saving failed, unexpected answer: {answer[:200]!r}"
+        ) from err
+    if not isinstance(result, dict):
+        raise IsgConnectionError(f"Saving failed, unexpected answer: {answer[:200]!r}")
+    if result.get("success") is True:
+        return
+    if result.get("warning") is True:
+        _LOGGER.warning("ISG saved with a warning: %s", result.get("message"))
+        return
+    raise IsgConnectionError(
+        f"Saving failed: {result.get('message') or result.get('errors') or result}"
+    )
 
 
 def _texts_for_consumption_table(title: str) -> IsgTexts | None:
@@ -115,10 +140,14 @@ class IsgClient:
             "pass": self._password,
         }
         try:
-            async with self._session.post(self._base, data=payload) as resp:
+            async with self._session.post(
+                self._base, data=payload, timeout=REQUEST_TIMEOUT
+            ) as resp:
                 text = await resp.text()
-        except aiohttp.ClientError as err:
-            raise IsgConnectionError(f"Connection to {self._base} failed: {err}") from err
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            raise IsgConnectionError(
+                f"Connection to {self._base} failed: {err!r}"
+            ) from err
 
         if not self._is_logged_in(text):
             raise IsgAuthError(
@@ -139,12 +168,12 @@ class IsgClient:
     async def _async_get(self, path: str) -> str:
         url = self._base + path
         try:
-            async with self._session.get(url) as resp:
+            async with self._session.get(url, timeout=REQUEST_TIMEOUT) as resp:
                 if resp.status != 200:
                     raise IsgConnectionError(f"Unknown status {resp.status} from {url}")
                 return await resp.text()
-        except aiohttp.ClientError as err:
-            raise IsgConnectionError(f"GET {url} failed: {err}") from err
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            raise IsgConnectionError(f"GET {url} failed: {err!r}") from err
 
     async def _async_get_cooling_form(self) -> IsgFormState:
         html = await self._async_get_page(COOLING_PAGE_PATH)
@@ -178,7 +207,7 @@ class IsgClient:
                     if script.string is not None:
                         for line in script.string.splitlines():
                             if search in line:
-                                match = re.search(r"='(.+)';", line)
+                                match = re.search(r"='([^']*)';", line)
                                 if match is None:
                                     continue
                                 value = match.group(1)
@@ -235,18 +264,22 @@ class IsgClient:
         fields[VAL_COOLING] = "1" if turn_on else "0"
 
         url = self._base + "save.php"
-                
-        payload = "data=["
-        for key, value in fields.items():
-            payload += '{"name":"' + key + '", "value":"' + value + '"},'
-        payload = payload[:-1] + "]"
-        
-        headers = {'content-type': 'application/x-www-form-urlencoded'}
-                
+        # like the Servicewelt itself: $.post("save.php", {data: JSON of
+        # $("#werte").serializeArray()}), sent form-encoded
+        payload = {
+            "data": json.dumps(
+                [{"name": key, "value": value} for key, value in fields.items()],
+                separators=(",", ":"),
+            )
+        }
         try:
-            async with self._session.post(url, data=payload, headers=headers) as resp:
+            async with self._session.post(
+                url, data=payload, timeout=REQUEST_TIMEOUT
+            ) as resp:
                 if resp.status != 200:
                     raise IsgConnectionError(f"Saving failed, status {resp.status}")
-        except aiohttp.ClientError as err:
-            raise IsgConnectionError(f"POST {url} failed: {err}") from err
+                answer = await resp.text()
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            raise IsgConnectionError(f"POST {url} failed: {err!r}") from err
+        _check_save_answer(answer)
 
