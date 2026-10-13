@@ -8,12 +8,14 @@
           "username": "Benutzername",
           "password": "Passwort",
           "login_marker": "Login-Erfolgskennung",
-          "scan_interval": "Abfrageintervall (Stunden)"
+          "scan_interval": "Abfrageintervall (Stunden)",
+          "consumption_scan_interval": "Abfrageintervall Stromverbrauch (Minuten)"
         },
         "data_description": {
           "username": "Benutzername und Passwort leer lassen, wenn Ihr ISG keine Anmeldung erfordert. Die Anmeldung wird dann komplett übersprungen.",
-          "login_marker": "Text, der nach erfolgreicher Anmeldung auf der Seite erscheint. Hängt von der Sprache des ISG-Geräts ab. Standardwert nur ändern, wenn die Anmeldeerkennung fehlschlägt. Wird ignoriert, wenn keine Anmeldedaten gesetzt sind.",
-          "scan_interval": "Wie oft Home Assistant den Kühlstatus vom ISG abfragt, in Stunden. Standard ist 24."
+          "login_marker": "Text, der nach erfolgreicher Anmeldung auf der Seite erscheint. Hängt von der Sprache des ISG-Geräts ab. Deutsch und Englisch werden immer erkannt; nur für andere Sprachen ändern. Wird ignoriert, wenn keine Anmeldedaten gesetzt sind.",
+          "scan_interval": "Wie oft Home Assistant den Kühlstatus vom ISG abfragt, in Stunden. Standard ist 24.",
+          "consumption_scan_interval": "Wie oft Home Assistant den Stromverbrauch fürs Kühlen vom ISG abfragt, in Minuten. Standard ist 10. Verbrauch nach der letzten Abfrage vor Mitternacht fehlt im Gesamtverbrauch."
         }
       }
     },
@@ -25,7 +27,33 @@
       "already_configured": "Gerät ist bereits eingerichtet"
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Abfrageintervalle",
+        "data": {
+          "scan_interval": "Abfrageintervall (Stunden)",
+          "consumption_scan_interval": "Abfrageintervall Stromverbrauch (Minuten)"
+        },
+        "data_description": {
+          "scan_interval": "Wie oft Home Assistant den Kühlstatus vom ISG abfragt, in Stunden. Standard ist 24.",
+          "consumption_scan_interval": "Wie oft Home Assistant den Stromverbrauch fürs Kühlen vom ISG abfragt, in Minuten. Standard ist 10. Verbrauch nach der letzten Abfrage vor Mitternacht fehlt im Gesamtverbrauch."
+        }
+      }
+    }
+  },
   "entity": {
+    "sensor": {
+      "cooling_consumption_24h": {
+        "name": "Stromverbrauch Kühlen 1-24 h"
+      },
+      "cooling_consumption_12m": {
+        "name": "Stromverbrauch Kühlen 1-12 M"
+      },
+      "cooling_consumption_total": {
+        "name": "Stromverbrauch Kühlen gesamt"
+      }
+    },
     "switch": {
       "cooling": {
         "name": "Kühlbetrieb"

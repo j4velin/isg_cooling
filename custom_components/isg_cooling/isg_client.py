@@ -9,7 +9,17 @@ from bs4 import BeautifulSoup
 
 import re
 
-from .const import COOLING_PAGE_PATH, LOGIN_SUCCESS_MARKER, VAL_COOLING
+from .const import (
+    CONSUMPTION_TABLE_TITLES,
+    COOLING_PAGE_PATH,
+    ENERGY_PAGE_PATH,
+    KEYS_COOLING_12M,
+    KEYS_COOLING_24H,
+    KEYS_COOLING_PREV_12M,
+    KNOWN_LOGIN_SUCCESS_MARKERS,
+    LOGIN_SUCCESS_MARKER,
+    VAL_COOLING,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,6 +39,43 @@ class IsgFormState:
     fields: dict[str, str]
     cooling_on: bool
 
+
+@dataclass
+class IsgCoolingConsumption:
+    """cooling power consumption in kWh, None if not shown by the ISG"""
+
+    last_24h: float | None
+    last_12m: float | None
+    last_prev_12m: float | None
+
+
+def _parse_energy(text: str) -> float | None:
+    """'0,313MWh' -> 313.0 (kWh)"""
+    match = re.search(r"([\d.,]+)\s*(kWh|MWh)", text)
+    if match is None:
+        return None
+    number = match.group(1)
+    if "," in number:
+        number = number.replace(".", "").replace(",", ".")
+    value = float(number)
+    if match.group(2) == "MWh":
+        value *= 1000
+    return round(value, 3)
+
+
+def _normalize_key(text: str) -> str:
+    """'KÜHLEN 1–24 h' -> 'KÜHLEN1-24H'"""
+    return re.sub(r"\s+", "", text).replace("–", "-").upper()
+
+
+def _first(values: dict[str, float | None], keys: tuple[str, ...]) -> float | None:
+    """value of the first key found (one key per device language)"""
+    for key in keys:
+        if key in values:
+            return values[key]
+    return None
+
+
 class IsgClient:
     """client for http://<host>/ (ISG Servicewelt)."""
 
@@ -47,9 +94,20 @@ class IsgClient:
         self._login_marker = login_marker
         self._logged_in = False
 
+    @property
+    def _has_credentials(self) -> bool:
+        return bool(self._username or self._password)
+
+    def _is_logged_in(self, html: str) -> bool:
+        html = html.lower()
+        return any(
+            marker in html
+            for marker in (self._login_marker.lower(), *KNOWN_LOGIN_SUCCESS_MARKERS)
+        )
+
     async def async_login(self) -> None:
         """login (skipped when no credentials are configured)"""
-        if not self._username and not self._password:
+        if not self._has_credentials:
             # no credentials configured -> the Servicewelt is used without a
             # login, so skip the login request entirely.
             self._logged_in = True
@@ -65,21 +123,34 @@ class IsgClient:
         except aiohttp.ClientError as err:
             raise IsgConnectionError(f"Connection to {self._base} failed: {err}") from err
 
-        if self._login_marker.lower() not in text.lower():
+        if not self._is_logged_in(text):
             raise IsgAuthError(
                 "Login failed"
             )
         self._logged_in = True
 
-    async def _async_get_cooling_form(self) -> IsgFormState:
-        url = self._base + COOLING_PAGE_PATH
+    async def _async_get_page(self, path: str) -> str:
+        """GET a page, login again once if the session expired"""
+        if not self._logged_in:
+            await self.async_login()
+        html = await self._async_get(path)
+        if self._has_credentials and not self._is_logged_in(html):
+            await self.async_login()
+            html = await self._async_get(path)
+        return html
+
+    async def _async_get(self, path: str) -> str:
+        url = self._base + path
         try:
             async with self._session.get(url) as resp:
                 if resp.status != 200:
                     raise IsgConnectionError(f"Unknown status {resp.status} from {url}")
-                html = await resp.text()
+                return await resp.text()
         except aiohttp.ClientError as err:
             raise IsgConnectionError(f"GET {url} failed: {err}") from err
+
+    async def _async_get_cooling_form(self) -> IsgFormState:
+        html = await self._async_get_page(COOLING_PAGE_PATH)
 
         soup = BeautifulSoup(html, "html.parser")
         form = soup.find("form", id="werte")
@@ -118,18 +189,47 @@ class IsgClient:
                 
         return IsgFormState(fields=fields, cooling_on=cooling_on)
 
+    async def async_get_cooling_consumption(self) -> IsgCoolingConsumption:
+        """cooling rows of LEISTUNGSAUFNAHME in INFO > ENERGIEBILANZ"""
+        html = await self._async_get_page(ENERGY_PAGE_PATH)
+        soup = BeautifulSoup(html, "html.parser")
+
+        values: dict[str, float | None] | None = None
+        for table in soup.find_all("table", class_="info"):
+            header = table.find("th")
+            if header is None:
+                continue
+            if header.get_text(strip=True).upper() not in CONSUMPTION_TABLE_TITLES:
+                continue
+            values = {}
+            for row in table.find_all("tr"):
+                key = row.find("td", class_="key")
+                value = row.find("td", class_="value")
+                if key is None or value is None:
+                    continue
+                values[_normalize_key(key.get_text())] = _parse_energy(
+                    value.get_text(strip=True)
+                )
+            break
+
+        if values is None:
+            raise IsgConnectionError(
+                "Table 'LEISTUNGSAUFNAHME' not found - session expired?"
+            )
+        # not every heat pump / ISG version shows the cooling rows
+        return IsgCoolingConsumption(
+            last_24h=_first(values, KEYS_COOLING_24H),
+            last_12m=_first(values, KEYS_COOLING_12M),
+            last_prev_12m=_first(values, KEYS_COOLING_PREV_12M),
+        )
+
     async def async_get_cooling_state(self) -> bool:
         """True, if cooling (KÜHLBETRIEB, val73) is on"""
-        if not self._logged_in:
-            await self.async_login()
         state = await self._async_get_cooling_form()
         return state.cooling_on
 
     async def async_set_cooling_state(self, turn_on: bool) -> None:
         """toggle val73, keep other fields unchanged."""
-        if not self._logged_in:
-            await self.async_login()
-
         state = await self._async_get_cooling_form()
         fields = dict(state.fields)
         fields[VAL_COOLING] = "1" if turn_on else "0"

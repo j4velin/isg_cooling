@@ -15,6 +15,7 @@ from homeassistant.helpers.update_coordinator import (
     UpdateFailed,
 )
 
+from . import get_option
 from .const import (
     CONF_HOST,
     CONF_LOGIN_MARKER,
@@ -56,7 +57,7 @@ async def async_setup_entry(
         name="isg_cooling",
         update_method=_async_update_data,
         update_interval=timedelta(
-            hours=data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_HOURS)
+            hours=get_option(entry, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_HOURS)
         ),
     )
     await coordinator.async_config_entry_first_refresh()

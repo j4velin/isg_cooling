@@ -6,14 +6,26 @@ Home Assistant custom integration for controlling the **cooling** setting of a *
 
 ## What it does
 
-This integration adds a single Home Assistant switch that reflects and controls the cooling mode of the heat pump.
+This integration adds a Home Assistant switch that reflects and controls the cooling mode of the heat pump.
 
 - **On** = cooling enabled
 - **Off** = cooling disabled
 
+It also adds energy sensors (in kWh) for the electrical power used for cooling, read from **INFO → ENERGIEBILANZ** (table *LEISTUNGSAUFNAHME*, rows *KÜHLEN*; in English: **INFO → ENERGY FOOTPRINT**, table *POWER CONSUMPTION*, rows *COOLING*):
+
+- **Stromverbrauch Kühlen gesamt**: a lifetime total, similar to the *consumed heating total* sensor of the Stiebel Eltron ISG integration. The ISG has no such value, so the integration keeps it itself (see below). It can be used in the Home Assistant **Energy dashboard**.
+- **Stromverbrauch Kühlen 1-24 h**: the consumption of the current day. It resets daily.
+- **Stromverbrauch Kühlen 1-12 M**: the consumption of the last 12 months, with a resolution of 1 kWh.
+
+Not every heat pump / ISG version shows these values; if they are missing, the 1-24 h and 1-12 M sensors are *unknown* and the total keeps its last value.
+
+#### How the total is calculated
+
+The ISG only shows the consumption of the last 24 hours, the last 12 months and the 12 months before (13-24 M). When the sensor is created, the total starts at *1-12 M + 13-24 M*. This matches the real lifetime consumption only if the heat pump is less than 24 months old; otherwise older consumption is missing. From then on, the 1-24 h value is added up whenever it resets at midnight. The total is stored across Home Assistant restarts. The consumption between the last reading before midnight and the reset is lost, so it depends on the power consumption poll interval: with the default of 10 minutes, at most about 0.15 kWh per day (compressor at ~1 kW), and only if cooling runs around midnight. If Home Assistant is offline over midnight, everything since the last reading that day is lost.
+
 The integration communicates directly with the heat pump's local web interface and does not require any cloud service.
 
-> **Note:** This integration has so far only been tested with a **German** ISG interface and **Servicewelt version 12.2.3**. Other languages and Servicewelt versions may work but are untested. If your ISG is set to a different language, adjust the **Login success marker** field during setup (see [Configuration](#configuration)).
+> **Note:** This integration has so far only been tested with **Servicewelt version 12.2.3**, set to **German** or **English**. Other Servicewelt versions may work but are untested. For other languages, adjust the **Login success marker** field during setup (see [Configuration](#configuration)); the power consumption sensors only support German and English.
 
 ## Requirements
 
@@ -59,15 +71,20 @@ Once installed via HACS, you will be notified of new releases and can update wit
    - **Host**: the ISG hostname or IP address
    - **Username** *(optional — leave empty, together with the password, if your ISG does not require a login; the login request is then skipped entirely)*
    - **Password** *(optional)*
-   - **Login success marker** *(defaults to `angemeldet als`; only change it if your ISG uses a different language)*
+   - **Login success marker** *(defaults to `angemeldet als`; the German and English markers are always recognized, so only change it if your ISG uses another language)*
    - **Poll interval (hours)** *(defaults to 24; how often the cooling state is read from the ISG)*
+   - **Power consumption poll interval (minutes)** *(defaults to 10; how often the power consumption sensors are read from the ISG. A shorter interval loses less consumption at midnight for the total; see [How the total is calculated](#how-the-total-is-calculated))*
 4. Finish setup.
+
+Both poll intervals can be changed later: go to **Settings** → **Devices & services** → **LWZ Kühlbetrieb** and click **Configure**. The integration reloads with the new intervals; the cooling power consumption total is kept.
 
 ## Usage
 
 After setup, Home Assistant will expose a switch named **Kühlbetrieb**.
 
 Use the switch to enable or disable cooling on the heat pump.
+
+To track the cooling power consumption in the Energy dashboard, add **Stromverbrauch Kühlen gesamt** as an individual device under **Settings** → **Dashboards** → **Energy**.
 
 ## Notes
 

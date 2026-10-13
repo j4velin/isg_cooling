@@ -8,12 +8,14 @@
           "username": "Username",
           "password": "Password",
           "login_marker": "Login success marker",
-          "scan_interval": "Poll interval (hours)"
+          "scan_interval": "Poll interval (hours)",
+          "consumption_scan_interval": "Power consumption poll interval (minutes)"
         },
         "data_description": {
           "username": "Leave username and password empty if your ISG does not require a login. The login request is then skipped entirely.",
-          "login_marker": "Text that appears on the page after a successful login. Depends on the ISG device's language. Only change the default if login detection fails. Ignored when no credentials are set.",
-          "scan_interval": "How often Home Assistant reads the cooling state from the ISG, in hours. Default is 24."
+          "login_marker": "Text that appears on the page after a successful login. Depends on the ISG device's language. German and English are always recognized; only change it for other languages. Ignored when no credentials are set.",
+          "scan_interval": "How often Home Assistant reads the cooling state from the ISG, in hours. Default is 24.",
+          "consumption_scan_interval": "How often Home Assistant reads the cooling power consumption from the ISG, in minutes. Default is 10. Consumption after the last reading before midnight is missing from the total."
         }
       }
     },
@@ -25,7 +27,33 @@
       "already_configured": "Device is already configured"
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Poll intervals",
+        "data": {
+          "scan_interval": "Poll interval (hours)",
+          "consumption_scan_interval": "Power consumption poll interval (minutes)"
+        },
+        "data_description": {
+          "scan_interval": "How often Home Assistant reads the cooling state from the ISG, in hours. Default is 24.",
+          "consumption_scan_interval": "How often Home Assistant reads the cooling power consumption from the ISG, in minutes. Default is 10. Consumption after the last reading before midnight is missing from the total."
+        }
+      }
+    }
+  },
   "entity": {
+    "sensor": {
+      "cooling_consumption_24h": {
+        "name": "Cooling power consumption 1-24 h"
+      },
+      "cooling_consumption_12m": {
+        "name": "Cooling power consumption 1-12 M"
+      },
+      "cooling_consumption_total": {
+        "name": "Cooling power consumption total"
+      }
+    },
     "switch": {
       "cooling": {
         "name": "Cooling"
