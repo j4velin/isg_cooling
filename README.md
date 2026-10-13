@@ -21,7 +21,7 @@ Not every heat pump / ISG version shows these values; if they are missing, the 1
 
 #### How the total is calculated
 
-The ISG only shows the consumption of the last 24 hours, the last 12 months and the 12 months before (13-24 M). When the sensor is created, the total starts at *1-12 M + 13-24 M*. This matches the real lifetime consumption only if the heat pump is less than 24 months old; otherwise older consumption is missing. From then on, the 1-24 h value is added up whenever it resets at midnight. The total is stored across Home Assistant restarts. If Home Assistant is offline over midnight, the consumption between the last reading and midnight is lost.
+The ISG only shows the consumption of the last 24 hours, the last 12 months and the 12 months before (13-24 M). When the sensor is created, the total starts at *1-12 M + 13-24 M*. This matches the real lifetime consumption only if the heat pump is less than 24 months old; otherwise older consumption is missing. From then on, the 1-24 h value is added up whenever it resets at midnight. The total is stored across Home Assistant restarts. The consumption between the last reading before midnight and the reset is lost, so it depends on the power consumption poll interval: with the default of 10 minutes, at most about 0.15 kWh per day (compressor at ~1 kW), and only if cooling runs around midnight. If Home Assistant is offline over midnight, everything since the last reading that day is lost.
 
 The integration communicates directly with the heat pump's local web interface and does not require any cloud service.
 
@@ -72,7 +72,8 @@ Once installed via HACS, you will be notified of new releases and can update wit
    - **Username** *(optional — leave empty, together with the password, if your ISG does not require a login; the login request is then skipped entirely)*
    - **Password** *(optional)*
    - **Login success marker** *(defaults to `angemeldet als`; only change it if your ISG uses a different language)*
-   - **Poll interval (hours)** *(defaults to 24; how often the cooling state is read from the ISG. The power consumption sensors are always read every 5 minutes)*
+   - **Poll interval (hours)** *(defaults to 24; how often the cooling state is read from the ISG)*
+   - **Power consumption poll interval (minutes)** *(defaults to 10; how often the power consumption sensors are read from the ISG. A shorter interval loses less consumption at midnight for the total; see [How the total is calculated](#how-the-total-is-calculated))*
 4. Finish setup.
 
 ## Usage

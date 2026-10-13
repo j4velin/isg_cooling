@@ -25,11 +25,12 @@ from homeassistant.util import dt as dt_util
 
 from .consumption_total import CoolingConsumptionTotal
 from .const import (
+    CONF_CONSUMPTION_SCAN_INTERVAL,
     CONF_HOST,
     CONF_LOGIN_MARKER,
     CONF_PASSWORD,
     CONF_USERNAME,
-    CONSUMPTION_SCAN_INTERVAL_MINUTES,
+    DEFAULT_CONSUMPTION_SCAN_INTERVAL_MINUTES,
     LOGIN_SUCCESS_MARKER,
 )
 from .isg_client import (
@@ -67,7 +68,12 @@ async def async_setup_entry(
         _LOGGER,
         name="isg_cooling_consumption",
         update_method=_async_update_data,
-        update_interval=timedelta(minutes=CONSUMPTION_SCAN_INTERVAL_MINUTES),
+        update_interval=timedelta(
+            minutes=data.get(
+                CONF_CONSUMPTION_SCAN_INTERVAL,
+                DEFAULT_CONSUMPTION_SCAN_INTERVAL_MINUTES,
+            )
+        ),
     )
     await coordinator.async_config_entry_first_refresh()
 

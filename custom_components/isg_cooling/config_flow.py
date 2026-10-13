@@ -6,11 +6,13 @@ from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
+    CONF_CONSUMPTION_SCAN_INTERVAL,
     CONF_HOST,
     CONF_LOGIN_MARKER,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
     CONF_USERNAME,
+    DEFAULT_CONSUMPTION_SCAN_INTERVAL_MINUTES,
     DEFAULT_SCAN_INTERVAL_HOURS,
     DOMAIN,
     LOGIN_SUCCESS_MARKER,
@@ -25,6 +27,10 @@ DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_LOGIN_MARKER, default=LOGIN_SUCCESS_MARKER): str,
         vol.Required(
             CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL_HOURS
+        ): vol.All(vol.Coerce(int), vol.Range(min=1)),
+        vol.Required(
+            CONF_CONSUMPTION_SCAN_INTERVAL,
+            default=DEFAULT_CONSUMPTION_SCAN_INTERVAL_MINUTES,
         ): vol.All(vol.Coerce(int), vol.Range(min=1)),
     }
 )

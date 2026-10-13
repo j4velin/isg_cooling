@@ -5,6 +5,7 @@ CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
 CONF_LOGIN_MARKER = "login_marker"
 CONF_SCAN_INTERVAL = "scan_interval"
+CONF_CONSUMPTION_SCAN_INTERVAL = "consumption_scan_interval"
 
 # Servicewelt path "EINSTELLUNGEN > KÜHLEN > KÜHLBETRIEB HK1"
 COOLING_PAGE_PATH = "?s=4,3,2"
@@ -23,9 +24,6 @@ KEY_COOLING_24H = "KÜHLEN1-24H"
 KEY_COOLING_12M = "KÜHLEN1-12M"
 KEY_COOLING_PREV_12M = "KÜHLEN13-24M"
 
-# polling interval for the power consumption sensors
-CONSUMPTION_SCAN_INTERVAL_MINUTES = 5
-
 # default marker in the Servicewelt HTML that indicates a successful login.
 # NOTE: this is a token from the device firmware's response, not a UI
 # string - it depends on the device language, not on Home Assistant's,
@@ -35,3 +33,7 @@ LOGIN_SUCCESS_MARKER = "angemeldet als"
 
 # default polling interval (in hours) for reading the cooling state
 DEFAULT_SCAN_INTERVAL_HOURS = 24
+
+# default polling interval (in minutes) for the power consumption sensors.
+# consumption after the last reading before midnight is lost for the total.
+DEFAULT_CONSUMPTION_SCAN_INTERVAL_MINUTES = 10
