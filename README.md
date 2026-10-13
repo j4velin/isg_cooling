@@ -108,6 +108,15 @@ This repository is a Python Home Assistant integration.
 
 To support another ISG language, add its texts (login text, title of the power consumption table and the cooling rows) to `ISG_TEXTS` in `custom_components/isg_cooling/const.py`, and test them against a saved copy of the ISG page **INFO → ENERGIEBILANZ** (`?s=1,2`) in that language. The texts of all languages in `ISG_TEXTS` are accepted, so no setting is needed.
 
+### Tests
+
+The tests cover the parts that don't need Home Assistant: reading the ISG pages (`tests/test_parsing.py`) and the communication with the ISG, against a small fake ISG on `127.0.0.1` (`tests/test_http.py`). `tests/fixtures` holds trimmed copies of real ISG pages (Servicewelt v12.2.3). Run them with:
+
+```bash
+pip install -r requirements_test.txt
+pytest tests
+```
+
 ## License
 
 No license file is currently included in this repository.

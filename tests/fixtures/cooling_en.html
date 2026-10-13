@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<!-- trimmed copy of http://isg.lan/?s=4,3,2 (Servicewelt v12.2.3, English):
+     only the login line and the form the integration reads -->
+<html><head><meta charset="UTF-8"><title>STIEBEL ELTRON Reglersteuerung</title></head>
+<body>
+<div id="login">You are registered as: <strong>user</strong></div>
+<form action="http://isg.lan/?s=4,3,2#" id="werte" onsubmit="saveValues(this);return false;"><div id="content">
+<script type="text/javascript">
+  var valSettings = new Array();
+  var jsvalues = new Array();
+  var jsobj;
+</script>
+<div class="focusguard" id="focusguard-1" tabindex="0"></div>
+<div class="calibration round span-24 last" id="calval73">
+<div class="span-7 ialigned">
+<h3 class="title">COOLING MODE</h3>
+</div>
+<div class="values span-7">
+<div class="dropdown" style="width:7.56em"> <!-- Chrome-Bug: div zu schmal, daher feste Breite. Sorgt ausserdem fuer Platz fuer Radio-Buttons in div.black -->
+<input class="dropdown dropdown_wert" id="aval73" readonly="readonly" style="width:3.6em" value="OFF"/>
+<img class="dropdown" src=""/>
+<div class="black" style="padding-bottom:15px;padding-top:15px">
+<input alt="OFF" checked="checked" id="radioval730" name="val73" type="radio" value="0"/>
+<label for="radioval730">OFF</label>
+<br/>
+<input alt="ON" id="radioval731" name="val73" type="radio" value="1"/>
+<label for="radioval731">ON</label>
+<br/>
+</div>
+</div>
+<script language="javascript" type="text/javascript">
+    $(":input[name=val73]").click( function() {
+    if ($("input[name=val73]:checked").val()==$(this).val()) {
+      $("#val73").val($(this).val());
+      $("#aval73").val(this.alt);
+      valueChanged = true;
+      closeAllBoxes();
+    }});
+    </script>
+</div>
+<div class="values span-1 append-1"></div>
+<div class="green round-right span-8 last">
+<p>Optional selection</p>
+</div>
+</div>
+<div class="calibration round span-24 last" id="calval189">
+<div class="span-7 ialigned">
+<h3 class="title">COOLING SYSTEM</h3>
+</div>
+<div class="values span-7">
+<div class="dropdown" style="width:22.68em"> <!-- Chrome-Bug: div zu schmal, daher feste Breite. Sorgt ausserdem fuer Platz fuer Radio-Buttons in div.black -->
+<input class="dropdown dropdown_text" id="aval189" readonly="readonly" style="width:10.8em" value="AREA COOLING"/>
+<img class="dropdown" src=""/>
+<div class="black" style="padding-bottom:15px;padding-top:15px">
+<input alt="AREA COOLING" checked="checked" id="radioval1890" name="val189" type="radio" value="0"/>
+<label for="radioval1890">AREA COOLING</label>
+<br/>
+<input alt="FAN COOLING" id="radioval1891" name="val189" type="radio" value="1"/>
+<label for="radioval1891">FAN COOLING</label>
+<br/>
+</div>
+</div>
+<script language="javascript" type="text/javascript">
+    $(":input[name=val189]").click( function() {
+    if ($("input[name=val189]:checked").val()==$(this).val()) {
+      $("#val189").val($(this).val());
+      $("#aval189").val(this.alt);
+      valueChanged = true;
+      closeAllBoxes();
+    }});
+    </script>
+</div>
+<div class="values span-1 append-1"></div>
+<div class="green round-right span-8 last">
+<p>Optional selection</p>
+</div>
+</div> <div class="calibration round span-24 last" id="calval103">
+<div class="span-7 ialigned">
+<h3 class="title">HC TEMP. COOLING</h3>
+</div>
+<div class="values span-7">
+<div class="editors">
+<a href="javascript://" onmousedown="change('val103','+',10,30,'0.1',true);return false;">
+<img src=""/>
+</a>
+<a href="javascript://" id="editorslower" onmousedown="change('val103','-',10,30,'0.1',true);return false;" style="clear:left;">
+<img src=""/>
+</a>
+</div>
+<input class="edit upndown firstElement" id="val103" name="val103" style="width:3.6em" tabindex="1" type="text" value=""/>
+<script language="javascript" type="text/javascript">
+      valSettings['val103'] = new Array();
+      valSettings['val103']['type'] = 'float';       valSettings['val103']['min'] = '10';
+      valSettings['val103']['max'] = '30';
+      
+            
+      jsvalues['103'] = new Array();
+      jsvalues['103']['id']='val103';
+      jsvalues['103']['val']='18,0';
+    </script>
+</div>
+<div class="values span-1 append-1">°C</div>
+<div class="green round-right span-8 last">
+<p>Applicable values: Input between<br/>10 °C and 30 °C</p>
+</div>
+</div> <div class="calibration round span-24 last" id="calval107">
+<div class="span-7 ialigned">
+<h3 class="title">HYST. ROOM TEMP.</h3>
+</div>
+<div class="values span-7">
+<div class="editors">
+<a href="javascript://" onmousedown="change('val107','+',0,3,'0.1',true);return false;">
+<img src=""/>
+</a>
+<a href="javascript://" id="editorslower" onmousedown="change('val107','-',0,3,'0.1',true);return false;" style="clear:left;">
+<img src=""/>
+</a>
+</div>
+<input class="edit upndown lastElement" id="val107" name="val107" style="width:3.6em" tabindex="2" type="text" value=""/>
+<script language="javascript" type="text/javascript">
+      valSettings['val107'] = new Array();
+      valSettings['val107']['type'] = 'float';       valSettings['val107']['min'] = '0';
+      valSettings['val107']['max'] = '3';
+      
+            
+      jsvalues['107'] = new Array();
+      jsvalues['107']['id']='val107';
+      jsvalues['107']['val']='1,0';
+    </script>
+</div>
+<div class="values span-1 append-1">K</div>
+<div class="green round-right span-8 last">
+<p>Applicable values: Input between<br/>0 K and 3 K</p>
+</div>
+</div> <div class="focusguard" id="focusguard-2" tabindex="3"></div>
+<div class="span-24 last">
+<div class="span-4 right">
+<div class="button left" onclick="document.forms['werte'].onsubmit();"><div class="bg_r"> </div><a>Save</a></div> </div>
+</div>
+<div class="span-24 last"><p></p></div>
+<script type="text/javascript">
+$( document ).ready(function() {
+  $('#focusguard-1').focus( function() {
+	// "last" focus guard got focus: set focus to the first field
+	$('.lastElement').focus();
+	$('.lastElement').select();
+	
+  });
+
+  $('#focusguard-2').focus( function() {
+   // "first" focus guard got focus: set focus to the last field
+   $('.firstElement').focus();
+   $('.firstElement').select();
+  });
+}); 
+</script>
+</div> </form>
+</body></html>
