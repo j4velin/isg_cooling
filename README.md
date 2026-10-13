@@ -107,6 +107,8 @@ If setup fails:
 
 This repository is a Python Home Assistant integration.
 
+To support another ISG language, add its texts (login text, title of the power consumption table and the cooling rows) to `ISG_TEXTS` in `custom_components/isg_cooling/const.py`, and test them against a saved copy of the ISG page **INFO → ENERGIEBILANZ** (`?s=1,2`) in that language. The texts of all languages in `ISG_TEXTS` are accepted, so no setting is needed.
+
 ## License
 
 No license file is currently included in this repository.
