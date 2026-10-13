@@ -13,15 +13,17 @@ This integration adds a Home Assistant switch that reflects and controls the coo
 
 It also adds energy sensors (in kWh) for the electrical power used for cooling, read from **INFO → ENERGIEBILANZ** (table *LEISTUNGSAUFNAHME*, rows *KÜHLEN*; in English: **INFO → ENERGY FOOTPRINT**, table *POWER CONSUMPTION*, rows *COOLING*):
 
-- **Stromverbrauch Kühlen gesamt**: a lifetime total, similar to the *consumed heating total* sensor of the Stiebel Eltron ISG integration. The ISG has no such value, so the integration keeps it itself (see below). It can be used in the Home Assistant **Energy dashboard**.
-- **Stromverbrauch Kühlen 1-24 h**: the consumption of the current day. It resets daily.
+- **Stromverbrauch Kühlen gesamt**: a lifetime total, similar to the *consumed heating total* sensor of the Stiebel Eltron ISG integration. The ISG has no such value, so the integration keeps it itself (see below). It changes once a day, shortly after midnight, and can be used in the Home Assistant **Energy dashboard**.
+- **Stromverbrauch Kühlen 1-24 h**: the consumption of the last 24 hours. The ISG updates it every hour, a few minutes after the full hour.
 - **Stromverbrauch Kühlen 1-12 M**: the consumption of the last 12 months, with a resolution of 1 kWh.
+
+The 1-24 h and 1-12 M values go up and down as the windows move, so these two sensors have no state class and keep no long-term statistics.
 
 Not every heat pump / ISG version shows these values; if they are missing, the 1-24 h and 1-12 M sensors are *unknown* and the total keeps its last value.
 
 #### How the total is calculated
 
-The ISG only shows the consumption of the last 24 hours, the last 12 months and the 12 months before (13-24 M). When the sensor is created, the total starts at *1-12 M + 13-24 M*. This matches the real lifetime consumption only if the heat pump is less than 24 months old; otherwise older consumption is missing. From then on, the 1-24 h value is added up whenever it resets at midnight. The total is stored across Home Assistant restarts. The consumption between the last reading before midnight and the reset is lost, so it depends on the power consumption poll interval: with the default of 10 minutes, at most about 0.15 kWh per day (compressor at ~1 kW), and only if cooling runs around midnight. If Home Assistant is offline over midnight, everything since the last reading that day is lost.
+The ISG only shows the consumption of the last 24 hours, the last 12 months and the 12 months before (13-24 M). When the sensor is created, the total starts at *1-12 M + 13-24 M*. This matches the real lifetime consumption only if the heat pump is less than 24 months old; otherwise older consumption is missing. From then on, the 1-24 h value is added once a day: at 00:15 the integration reads it (in addition to the regular polling), and it then contains exactly the 24 hours before midnight. Reading the window once every 24 hours means the periods neither overlap nor leave gaps, so nothing is counted twice or lost. The total is stored across Home Assistant restarts. If the ISG cannot be read between 00:10 and 01:00, e.g. because Home Assistant is offline, the consumption of the previous day is missing from the total.
 
 The integration communicates directly with the heat pump's local web interface and does not require any cloud service.
 
@@ -73,7 +75,7 @@ Once installed via HACS, you will be notified of new releases and can update wit
    - **Password** *(optional)*
    - **Login success marker** *(defaults to `angemeldet als`; the German and English markers are always recognized, so only change it if your ISG uses another language)*
    - **Poll interval (hours)** *(defaults to 24; how often the cooling state is read from the ISG)*
-   - **Power consumption poll interval (minutes)** *(defaults to 10; how often the power consumption sensors are read from the ISG. A shorter interval loses less consumption at midnight for the total; see [How the total is calculated](#how-the-total-is-calculated))*
+   - **Power consumption poll interval (minutes)** *(defaults to 10; how often the 1-24 h and 1-12 M sensors are read from the ISG, which updates them hourly. The total does not depend on it; see [How the total is calculated](#how-the-total-is-calculated))*
 4. Finish setup.
 
 Both poll intervals can be changed later: go to **Settings** → **Devices & services** → **LWZ Kühlbetrieb** and click **Configure**. The integration reloads with the new intervals; the cooling power consumption total is kept.

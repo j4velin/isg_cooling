@@ -40,5 +40,5 @@ KNOWN_LOGIN_SUCCESS_MARKERS = ("angemeldet als", "you are registered as")
 DEFAULT_SCAN_INTERVAL_HOURS = 24
 
 # default polling interval (in minutes) for the power consumption sensors.
-# consumption after the last reading before midnight is lost for the total.
+# the ISG updates the 1-24 h value hourly; the total has its own daily refresh.
 DEFAULT_CONSUMPTION_SCAN_INTERVAL_MINUTES = 10

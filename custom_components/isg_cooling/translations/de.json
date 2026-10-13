@@ -15,7 +15,7 @@
           "username": "Benutzername und Passwort leer lassen, wenn Ihr ISG keine Anmeldung erfordert. Die Anmeldung wird dann komplett übersprungen.",
           "login_marker": "Text, der nach erfolgreicher Anmeldung auf der Seite erscheint. Hängt von der Sprache des ISG-Geräts ab. Deutsch und Englisch werden immer erkannt; nur für andere Sprachen ändern. Wird ignoriert, wenn keine Anmeldedaten gesetzt sind.",
           "scan_interval": "Wie oft Home Assistant den Kühlstatus vom ISG abfragt, in Stunden. Standard ist 24.",
-          "consumption_scan_interval": "Wie oft Home Assistant den Stromverbrauch fürs Kühlen vom ISG abfragt, in Minuten. Standard ist 10. Verbrauch nach der letzten Abfrage vor Mitternacht fehlt im Gesamtverbrauch."
+          "consumption_scan_interval": "Wie oft Home Assistant den Stromverbrauch fürs Kühlen vom ISG abfragt, in Minuten. Standard ist 10. Das ISG aktualisiert diese Werte stündlich; der Gesamtverbrauch wird unabhängig davon einmal täglich abgefragt."
         }
       }
     },
@@ -37,7 +37,7 @@
         },
         "data_description": {
           "scan_interval": "Wie oft Home Assistant den Kühlstatus vom ISG abfragt, in Stunden. Standard ist 24.",
-          "consumption_scan_interval": "Wie oft Home Assistant den Stromverbrauch fürs Kühlen vom ISG abfragt, in Minuten. Standard ist 10. Verbrauch nach der letzten Abfrage vor Mitternacht fehlt im Gesamtverbrauch."
+          "consumption_scan_interval": "Wie oft Home Assistant den Stromverbrauch fürs Kühlen vom ISG abfragt, in Minuten. Standard ist 10. Das ISG aktualisiert diese Werte stündlich; der Gesamtverbrauch wird unabhängig davon einmal täglich abgefragt."
         }
       }
     }

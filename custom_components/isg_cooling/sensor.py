@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from homeassistant.components.sensor import (
     RestoreSensor,
@@ -15,6 +15,7 @@ from homeassistant.const import UnitOfEnergy
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.restore_state import RestoredExtraData
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -24,7 +25,7 @@ from homeassistant.helpers.update_coordinator import (
 from homeassistant.util import dt as dt_util
 
 from . import get_option
-from .consumption_total import CoolingConsumptionTotal
+from .consumption_total import DAILY_READING_TIME, CoolingConsumptionTotal
 from .const import (
     CONF_CONSUMPTION_SCAN_INTERVAL,
     CONF_HOST,
@@ -106,10 +107,13 @@ class IsgCoolingConsumptionSensor(CoordinatorEntity, SensorEntity):
 
 
 class IsgCoolingConsumption24hSensor(IsgCoolingConsumptionSensor):
-    """KÜHLEN 1-24 h, resets daily - use this one for the energy dashboard."""
+    """KÜHLEN 1-24 h, the last 24 hours, updated hourly by the ISG.
+
+    No state class: the window goes up and down, so neither "total" nor
+    "total_increasing" gives correct statistics.
+    """
 
     _attr_translation_key = "cooling_consumption_24h"
-    _attr_state_class = SensorStateClass.TOTAL_INCREASING
     _attr_suggested_display_precision = 3
 
     @property
@@ -118,10 +122,9 @@ class IsgCoolingConsumption24hSensor(IsgCoolingConsumptionSensor):
 
 
 class IsgCoolingConsumption12mSensor(IsgCoolingConsumptionSensor):
-    """KÜHLEN 1-12 M, only 1 kWh resolution."""
+    """KÜHLEN 1-12 M, only 1 kWh resolution. A window, so no state class."""
 
     _attr_translation_key = "cooling_consumption_12m"
-    _attr_state_class = SensorStateClass.TOTAL
     _attr_suggested_display_precision = 0
 
     @property
@@ -130,7 +133,11 @@ class IsgCoolingConsumption12mSensor(IsgCoolingConsumptionSensor):
 
 
 class IsgCoolingConsumptionTotalSensor(IsgCoolingConsumptionSensor, RestoreSensor):
-    """lifetime total, the ISG has no such value - see consumption_total.py"""
+    """lifetime total, the ISG has no such value - see consumption_total.py
+
+    Use this one for the energy dashboard. It changes once a day, shortly
+    after midnight.
+    """
 
     _attr_translation_key = "cooling_consumption_total"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -152,6 +159,19 @@ class IsgCoolingConsumptionTotalSensor(IsgCoolingConsumptionSensor, RestoreSenso
             if restored is not None:
                 self._total = restored
         self._update_total()
+        self.async_on_remove(
+            async_track_time_change(
+                self.hass,
+                self._async_daily_refresh,
+                hour=DAILY_READING_TIME.hour,
+                minute=DAILY_READING_TIME.minute,
+                second=0,
+            )
+        )
+
+    async def _async_daily_refresh(self, now: datetime) -> None:
+        """make sure there is a reading for the daily total"""
+        await self.coordinator.async_request_refresh()
 
     @callback
     def _handle_coordinator_update(self) -> None:
