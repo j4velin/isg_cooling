@@ -12,6 +12,19 @@ COOLING_PAGE_PATH = "?s=4,3,2"
 # cooling setting field name (0=AUS, 1=EIN)
 VAL_COOLING = "val73"
 
+# Servicewelt path "INFO > ENERGIEBILANZ"
+ENERGY_PAGE_PATH = "?s=1,2"
+
+# title of the power consumption table (differs between ISG versions)
+CONSUMPTION_TABLE_TITLES = ("LEISTUNGSAUFNAHME", "STROMVERBRAUCH")
+
+# normalized row keys in the power consumption table
+KEY_COOLING_24H = "KÜHLEN1-24H"
+KEY_COOLING_12M = "KÜHLEN1-12M"
+
+# polling interval for the power consumption sensors
+CONSUMPTION_SCAN_INTERVAL_MINUTES = 5
+
 # default marker in the Servicewelt HTML that indicates a successful login.
 # NOTE: this is a token from the device firmware's response, not a UI
 # string - it depends on the device language, not on Home Assistant's,

@@ -26,6 +26,14 @@
     }
   },
   "entity": {
+    "sensor": {
+      "cooling_consumption_24h": {
+        "name": "Stromverbrauch Kühlen 1-24 h"
+      },
+      "cooling_consumption_12m": {
+        "name": "Stromverbrauch Kühlen 1-12 M"
+      }
+    },
     "switch": {
       "cooling": {
         "name": "Kühlbetrieb"

@@ -26,6 +26,14 @@
     }
   },
   "entity": {
+    "sensor": {
+      "cooling_consumption_24h": {
+        "name": "Cooling power consumption 1-24 h"
+      },
+      "cooling_consumption_12m": {
+        "name": "Cooling power consumption 1-12 M"
+      }
+    },
     "switch": {
       "cooling": {
         "name": "Cooling"

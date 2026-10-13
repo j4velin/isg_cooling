@@ -9,7 +9,15 @@ from bs4 import BeautifulSoup
 
 import re
 
-from .const import COOLING_PAGE_PATH, LOGIN_SUCCESS_MARKER, VAL_COOLING
+from .const import (
+    CONSUMPTION_TABLE_TITLES,
+    COOLING_PAGE_PATH,
+    ENERGY_PAGE_PATH,
+    KEY_COOLING_12M,
+    KEY_COOLING_24H,
+    LOGIN_SUCCESS_MARKER,
+    VAL_COOLING,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,6 +37,34 @@ class IsgFormState:
     fields: dict[str, str]
     cooling_on: bool
 
+
+@dataclass
+class IsgCoolingConsumption:
+    """cooling power consumption in kWh, None if not shown by the ISG"""
+
+    last_24h: float | None
+    last_12m: float | None
+
+
+def _parse_energy(text: str) -> float | None:
+    """'0,313MWh' -> 313.0 (kWh)"""
+    match = re.search(r"([\d.,]+)\s*(kWh|MWh)", text)
+    if match is None:
+        return None
+    number = match.group(1)
+    if "," in number:
+        number = number.replace(".", "").replace(",", ".")
+    value = float(number)
+    if match.group(2) == "MWh":
+        value *= 1000
+    return round(value, 3)
+
+
+def _normalize_key(text: str) -> str:
+    """'KÜHLEN 1–24 h' -> 'KÜHLEN1-24H'"""
+    return re.sub(r"\s+", "", text).replace("–", "-").upper()
+
+
 class IsgClient:
     """client for http://<host>/ (ISG Servicewelt)."""
 
@@ -47,9 +83,13 @@ class IsgClient:
         self._login_marker = login_marker
         self._logged_in = False
 
+    @property
+    def _has_credentials(self) -> bool:
+        return bool(self._username or self._password)
+
     async def async_login(self) -> None:
         """login (skipped when no credentials are configured)"""
-        if not self._username and not self._password:
+        if not self._has_credentials:
             # no credentials configured -> the Servicewelt is used without a
             # login, so skip the login request entirely.
             self._logged_in = True
@@ -71,15 +111,28 @@ class IsgClient:
             )
         self._logged_in = True
 
-    async def _async_get_cooling_form(self) -> IsgFormState:
-        url = self._base + COOLING_PAGE_PATH
+    async def _async_get_page(self, path: str) -> str:
+        """GET a page, login again once if the session expired"""
+        if not self._logged_in:
+            await self.async_login()
+        html = await self._async_get(path)
+        if self._has_credentials and self._login_marker.lower() not in html.lower():
+            await self.async_login()
+            html = await self._async_get(path)
+        return html
+
+    async def _async_get(self, path: str) -> str:
+        url = self._base + path
         try:
             async with self._session.get(url) as resp:
                 if resp.status != 200:
                     raise IsgConnectionError(f"Unknown status {resp.status} from {url}")
-                html = await resp.text()
+                return await resp.text()
         except aiohttp.ClientError as err:
             raise IsgConnectionError(f"GET {url} failed: {err}") from err
+
+    async def _async_get_cooling_form(self) -> IsgFormState:
+        html = await self._async_get_page(COOLING_PAGE_PATH)
 
         soup = BeautifulSoup(html, "html.parser")
         form = soup.find("form", id="werte")
@@ -118,18 +171,46 @@ class IsgClient:
                 
         return IsgFormState(fields=fields, cooling_on=cooling_on)
 
+    async def async_get_cooling_consumption(self) -> IsgCoolingConsumption:
+        """cooling rows of LEISTUNGSAUFNAHME in INFO > ENERGIEBILANZ"""
+        html = await self._async_get_page(ENERGY_PAGE_PATH)
+        soup = BeautifulSoup(html, "html.parser")
+
+        values: dict[str, float | None] | None = None
+        for table in soup.find_all("table", class_="info"):
+            header = table.find("th")
+            if header is None:
+                continue
+            if header.get_text(strip=True).upper() not in CONSUMPTION_TABLE_TITLES:
+                continue
+            values = {}
+            for row in table.find_all("tr"):
+                key = row.find("td", class_="key")
+                value = row.find("td", class_="value")
+                if key is None or value is None:
+                    continue
+                values[_normalize_key(key.get_text())] = _parse_energy(
+                    value.get_text(strip=True)
+                )
+            break
+
+        if values is None:
+            raise IsgConnectionError(
+                "Table 'LEISTUNGSAUFNAHME' not found - session expired?"
+            )
+        # the ISG hides the cooling rows if cooling is disabled
+        return IsgCoolingConsumption(
+            last_24h=values.get(KEY_COOLING_24H),
+            last_12m=values.get(KEY_COOLING_12M),
+        )
+
     async def async_get_cooling_state(self) -> bool:
         """True, if cooling (KÜHLBETRIEB, val73) is on"""
-        if not self._logged_in:
-            await self.async_login()
         state = await self._async_get_cooling_form()
         return state.cooling_on
 
     async def async_set_cooling_state(self, turn_on: bool) -> None:
         """toggle val73, keep other fields unchanged."""
-        if not self._logged_in:
-            await self.async_login()
-
         state = await self._async_get_cooling_form()
         fields = dict(state.fields)
         fields[VAL_COOLING] = "1" if turn_on else "0"

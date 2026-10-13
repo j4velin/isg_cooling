@@ -6,10 +6,17 @@ Home Assistant custom integration for controlling the **cooling** setting of a *
 
 ## What it does
 
-This integration adds a single Home Assistant switch that reflects and controls the cooling mode of the heat pump.
+This integration adds a Home Assistant switch that reflects and controls the cooling mode of the heat pump.
 
 - **On** = cooling enabled
 - **Off** = cooling disabled
+
+It also adds two energy sensors (in kWh) for the electrical power used for cooling, read from **INFO → ENERGIEBILANZ** (table *LEISTUNGSAUFNAHME*, rows *KÜHLEN*):
+
+- **Stromverbrauch Kühlen 1-24 h**: the consumption of the current day. It resets daily and can be used in the Home Assistant **Energy dashboard**.
+- **Stromverbrauch Kühlen 1-12 M**: the consumption of the last 12 months, with a resolution of 1 kWh.
+
+The ISG hides these values while cooling is disabled; the sensors are *unknown* then.
 
 The integration communicates directly with the heat pump's local web interface and does not require any cloud service.
 
@@ -60,7 +67,7 @@ Once installed via HACS, you will be notified of new releases and can update wit
    - **Username** *(optional — leave empty, together with the password, if your ISG does not require a login; the login request is then skipped entirely)*
    - **Password** *(optional)*
    - **Login success marker** *(defaults to `angemeldet als`; only change it if your ISG uses a different language)*
-   - **Poll interval (hours)** *(defaults to 24; how often the cooling state is read from the ISG)*
+   - **Poll interval (hours)** *(defaults to 24; how often the cooling state is read from the ISG. The power consumption sensors are always read every 5 minutes)*
 4. Finish setup.
 
 ## Usage
@@ -68,6 +75,8 @@ Once installed via HACS, you will be notified of new releases and can update wit
 After setup, Home Assistant will expose a switch named **Kühlbetrieb**.
 
 Use the switch to enable or disable cooling on the heat pump.
+
+To track the cooling power consumption in the Energy dashboard, add **Stromverbrauch Kühlen 1-24 h** as an individual device under **Settings** → **Dashboards** → **Energy**.
 
 ## Notes
 
