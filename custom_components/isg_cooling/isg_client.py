@@ -13,9 +13,10 @@ from .const import (
     CONSUMPTION_TABLE_TITLES,
     COOLING_PAGE_PATH,
     ENERGY_PAGE_PATH,
-    KEY_COOLING_12M,
-    KEY_COOLING_24H,
-    KEY_COOLING_PREV_12M,
+    KEYS_COOLING_12M,
+    KEYS_COOLING_24H,
+    KEYS_COOLING_PREV_12M,
+    KNOWN_LOGIN_SUCCESS_MARKERS,
     LOGIN_SUCCESS_MARKER,
     VAL_COOLING,
 )
@@ -67,6 +68,14 @@ def _normalize_key(text: str) -> str:
     return re.sub(r"\s+", "", text).replace("–", "-").upper()
 
 
+def _first(values: dict[str, float | None], keys: tuple[str, ...]) -> float | None:
+    """value of the first key found (one key per device language)"""
+    for key in keys:
+        if key in values:
+            return values[key]
+    return None
+
+
 class IsgClient:
     """client for http://<host>/ (ISG Servicewelt)."""
 
@@ -89,6 +98,13 @@ class IsgClient:
     def _has_credentials(self) -> bool:
         return bool(self._username or self._password)
 
+    def _is_logged_in(self, html: str) -> bool:
+        html = html.lower()
+        return any(
+            marker in html
+            for marker in (self._login_marker.lower(), *KNOWN_LOGIN_SUCCESS_MARKERS)
+        )
+
     async def async_login(self) -> None:
         """login (skipped when no credentials are configured)"""
         if not self._has_credentials:
@@ -107,7 +123,7 @@ class IsgClient:
         except aiohttp.ClientError as err:
             raise IsgConnectionError(f"Connection to {self._base} failed: {err}") from err
 
-        if self._login_marker.lower() not in text.lower():
+        if not self._is_logged_in(text):
             raise IsgAuthError(
                 "Login failed"
             )
@@ -118,7 +134,7 @@ class IsgClient:
         if not self._logged_in:
             await self.async_login()
         html = await self._async_get(path)
-        if self._has_credentials and self._login_marker.lower() not in html.lower():
+        if self._has_credentials and not self._is_logged_in(html):
             await self.async_login()
             html = await self._async_get(path)
         return html
@@ -202,9 +218,9 @@ class IsgClient:
             )
         # not every heat pump / ISG version shows the cooling rows
         return IsgCoolingConsumption(
-            last_24h=values.get(KEY_COOLING_24H),
-            last_12m=values.get(KEY_COOLING_12M),
-            last_prev_12m=values.get(KEY_COOLING_PREV_12M),
+            last_24h=_first(values, KEYS_COOLING_24H),
+            last_12m=_first(values, KEYS_COOLING_12M),
+            last_prev_12m=_first(values, KEYS_COOLING_PREV_12M),
         )
 
     async def async_get_cooling_state(self) -> bool:

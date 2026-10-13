@@ -11,7 +11,7 @@ This integration adds a Home Assistant switch that reflects and controls the coo
 - **On** = cooling enabled
 - **Off** = cooling disabled
 
-It also adds energy sensors (in kWh) for the electrical power used for cooling, read from **INFO → ENERGIEBILANZ** (table *LEISTUNGSAUFNAHME*, rows *KÜHLEN*):
+It also adds energy sensors (in kWh) for the electrical power used for cooling, read from **INFO → ENERGIEBILANZ** (table *LEISTUNGSAUFNAHME*, rows *KÜHLEN*; in English: **INFO → ENERGY FOOTPRINT**, table *POWER CONSUMPTION*, rows *COOLING*):
 
 - **Stromverbrauch Kühlen gesamt**: a lifetime total, similar to the *consumed heating total* sensor of the Stiebel Eltron ISG integration. The ISG has no such value, so the integration keeps it itself (see below). It can be used in the Home Assistant **Energy dashboard**.
 - **Stromverbrauch Kühlen 1-24 h**: the consumption of the current day. It resets daily.
@@ -25,7 +25,7 @@ The ISG only shows the consumption of the last 24 hours, the last 12 months and 
 
 The integration communicates directly with the heat pump's local web interface and does not require any cloud service.
 
-> **Note:** This integration has so far only been tested with a **German** ISG interface and **Servicewelt version 12.2.3**. Other languages and Servicewelt versions may work but are untested. If your ISG is set to a different language, adjust the **Login success marker** field during setup (see [Configuration](#configuration)).
+> **Note:** This integration has so far only been tested with **Servicewelt version 12.2.3**, set to **German** or **English**. Other Servicewelt versions may work but are untested. For other languages, adjust the **Login success marker** field during setup (see [Configuration](#configuration)); the power consumption sensors only support German and English.
 
 ## Requirements
 
@@ -71,7 +71,7 @@ Once installed via HACS, you will be notified of new releases and can update wit
    - **Host**: the ISG hostname or IP address
    - **Username** *(optional — leave empty, together with the password, if your ISG does not require a login; the login request is then skipped entirely)*
    - **Password** *(optional)*
-   - **Login success marker** *(defaults to `angemeldet als`; only change it if your ISG uses a different language)*
+   - **Login success marker** *(defaults to `angemeldet als`; the German and English markers are always recognized, so only change it if your ISG uses another language)*
    - **Poll interval (hours)** *(defaults to 24; how often the cooling state is read from the ISG)*
    - **Power consumption poll interval (minutes)** *(defaults to 10; how often the power consumption sensors are read from the ISG. A shorter interval loses less consumption at midnight for the total; see [How the total is calculated](#how-the-total-is-calculated))*
 4. Finish setup.
