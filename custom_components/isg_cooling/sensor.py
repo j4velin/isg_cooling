@@ -13,6 +13,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfEnergy
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_change
@@ -33,6 +34,7 @@ from .const import (
     CONF_PASSWORD,
     CONF_USERNAME,
     DEFAULT_CONSUMPTION_SCAN_INTERVAL_MINUTES,
+    DOMAIN,
     LOGIN_SUCCESS_MARKER,
 )
 from .isg_client import (
@@ -80,10 +82,16 @@ async def async_setup_entry(
     )
     await coordinator.async_config_entry_first_refresh()
 
+    # the 1-12 M sensor was removed, the total covers it
+    registry = er.async_get(hass)
+    if entity_id := registry.async_get_entity_id(
+        "sensor", DOMAIN, f"{entry.entry_id}_cooling_consumption_12m"
+    ):
+        registry.async_remove(entity_id)
+
     async_add_entities(
         [
             IsgCoolingConsumption24hSensor(coordinator, entry),
-            IsgCoolingConsumption12mSensor(coordinator, entry),
             IsgCoolingConsumptionTotalSensor(coordinator, entry),
         ]
     )
@@ -110,26 +118,17 @@ class IsgCoolingConsumption24hSensor(IsgCoolingConsumptionSensor):
     """KÜHLEN 1-24 h, the last 24 hours, updated hourly by the ISG.
 
     No state class: the window goes up and down, so neither "total" nor
-    "total_increasing" gives correct statistics.
+    "total_increasing" gives correct statistics. Disabled by default, the
+    total covers everything except the consumption within a day.
     """
 
     _attr_translation_key = "cooling_consumption_24h"
     _attr_suggested_display_precision = 3
+    _attr_entity_registry_enabled_default = False
 
     @property
     def native_value(self) -> float | None:
         return self.coordinator.data.last_24h
-
-
-class IsgCoolingConsumption12mSensor(IsgCoolingConsumptionSensor):
-    """KÜHLEN 1-12 M, only 1 kWh resolution. A window, so no state class."""
-
-    _attr_translation_key = "cooling_consumption_12m"
-    _attr_suggested_display_precision = 0
-
-    @property
-    def native_value(self) -> float | None:
-        return self.coordinator.data.last_12m
 
 
 class IsgCoolingConsumptionTotalSensor(IsgCoolingConsumptionSensor, RestoreSensor):
