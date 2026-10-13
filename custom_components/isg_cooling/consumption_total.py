@@ -46,17 +46,19 @@ class CoolingConsumptionTotal:
     ) -> None:
         """add a new reading of the ISG windows"""
         today = now.date().isoformat()
+        if not DAILY_READING_START <= now.time() < DAILY_READING_END:
+            # outside the daily reading, or missed it, e.g. while Home
+            # Assistant was offline
+            return
         if self.base is None:
             if last_12m is None:
                 return
-            # the windows already contain the consumption up to now
+            # seeded at the daily reading too, so the windows end at midnight
+            # like the daily readings and nothing is counted twice
             self.base = last_12m + (last_prev_12m or 0.0)
             self.day = today
             return
         if last_24h is None or self.day == today:
-            return
-        if not DAILY_READING_START <= now.time() < DAILY_READING_END:
-            # missed the reading of this day, e.g. Home Assistant was offline
             return
         # the 24 hours before midnight
         self.base += last_24h
