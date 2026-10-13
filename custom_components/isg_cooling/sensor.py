@@ -23,6 +23,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import dt as dt_util
 
+from . import get_option
 from .consumption_total import CoolingConsumptionTotal
 from .const import (
     CONF_CONSUMPTION_SCAN_INTERVAL,
@@ -69,7 +70,8 @@ async def async_setup_entry(
         name="isg_cooling_consumption",
         update_method=_async_update_data,
         update_interval=timedelta(
-            minutes=data.get(
+            minutes=get_option(
+                entry,
                 CONF_CONSUMPTION_SCAN_INTERVAL,
                 DEFAULT_CONSUMPTION_SCAN_INTERVAL_MINUTES,
             )
