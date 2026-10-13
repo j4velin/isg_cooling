@@ -1,8 +1,7 @@
 """Sensors for the cooling power consumption (INFO > ENERGIEBILANZ)."""
 from __future__ import annotations
 
-import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from homeassistant.components.sensor import (
     RestoreSensor,
@@ -14,77 +13,31 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfEnergy
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.restore_state import RestoredExtraData
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
-    UpdateFailed,
 )
 from homeassistant.util import dt as dt_util
 
-from . import get_option
+from . import IsgRuntimeData
 from .consumption_total import (
     DAILY_READING_HOUR,
     DAILY_READING_MINUTES,
     CoolingConsumptionTotal,
 )
-from .const import (
-    CONF_CONSUMPTION_SCAN_INTERVAL,
-    CONF_HOST,
-    CONF_LOGIN_MARKER,
-    CONF_PASSWORD,
-    CONF_USERNAME,
-    DEFAULT_CONSUMPTION_SCAN_INTERVAL_MINUTES,
-    DOMAIN,
-    LOGIN_SUCCESS_MARKER,
-)
-from .isg_client import (
-    IsgAuthError,
-    IsgClient,
-    IsgConnectionError,
-    IsgCoolingConsumption,
-)
-
-_LOGGER = logging.getLogger(__name__)
+from .const import DOMAIN
+from .isg_client import IsgCoolingConsumption
 
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """create consumption sensors from config."""
-    data = entry.data
-    session = async_get_clientsession(hass)
-    client = IsgClient(
-        session,
-        data[CONF_HOST],
-        data[CONF_USERNAME],
-        data[CONF_PASSWORD],
-        data.get(CONF_LOGIN_MARKER, LOGIN_SUCCESS_MARKER),
-    )
-
-    async def _async_update_data() -> IsgCoolingConsumption:
-        try:
-            return await client.async_get_cooling_consumption()
-        except (IsgConnectionError, IsgAuthError) as err:
-            raise UpdateFailed(str(err)) from err
-
-    coordinator = DataUpdateCoordinator(
-        hass,
-        _LOGGER,
-        name="isg_cooling_consumption",
-        update_method=_async_update_data,
-        update_interval=timedelta(
-            minutes=get_option(
-                entry,
-                CONF_CONSUMPTION_SCAN_INTERVAL,
-                DEFAULT_CONSUMPTION_SCAN_INTERVAL_MINUTES,
-            )
-        ),
-    )
-    await coordinator.async_config_entry_first_refresh()
+    runtime: IsgRuntimeData = hass.data[DOMAIN][entry.entry_id]
+    coordinator = runtime.consumption
 
     # the 1-12 M sensor was removed, the total covers it
     registry = er.async_get(hass)
