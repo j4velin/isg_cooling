@@ -17,7 +17,7 @@ It also adds energy sensors (in kWh) for the electrical power used for cooling, 
 - **Stromverbrauch Kühlen 1-24 h**: the consumption of the current day. It resets daily.
 - **Stromverbrauch Kühlen 1-12 M**: the consumption of the last 12 months, with a resolution of 1 kWh.
 
-The ISG hides these values while cooling is disabled; the 1-24 h and 1-12 M sensors are *unknown* then.
+Not every heat pump / ISG version shows these values; if they are missing, the 1-24 h and 1-12 M sensors are *unknown* and the total keeps its last value.
 
 #### How the total is calculated
 

@@ -37,7 +37,7 @@ class CoolingConsumptionTotal:
     ) -> None:
         """add a new reading of the ISG windows"""
         if last_24h is None:
-            # the ISG hides the cooling rows if cooling is disabled
+            # no cooling rows on the ISG page
             return
         today = now.date().isoformat()
         if self.base is None:

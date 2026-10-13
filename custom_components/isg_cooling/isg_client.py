@@ -200,7 +200,7 @@ class IsgClient:
             raise IsgConnectionError(
                 "Table 'LEISTUNGSAUFNAHME' not found - session expired?"
             )
-        # the ISG hides the cooling rows if cooling is disabled
+        # not every heat pump / ISG version shows the cooling rows
         return IsgCoolingConsumption(
             last_24h=values.get(KEY_COOLING_24H),
             last_12m=values.get(KEY_COOLING_12M),
