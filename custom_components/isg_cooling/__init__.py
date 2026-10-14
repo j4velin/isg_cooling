@@ -116,6 +116,14 @@ def _async_device_info(hass: HomeAssistant, entry: ConfigEntry) -> DeviceInfo:
             info["via_device_id"] = isg_device.id
         else:
             info["via_device"] = next(iter(isg_device.identifiers))
+    else:
+        # without a via field the registry keeps the link of an earlier
+        # start, which may be wrong now, e.g. after the ISG moved to another
+        # host; clear it directly, which works on all supported versions
+        dev_reg = dr.async_get(hass)
+        own = dev_reg.async_get_device(identifiers={(DOMAIN, entry.entry_id)})
+        if own is not None and own.via_device_id is not None:
+            dev_reg.async_update_device(own.id, via_device_id=None)
     return info
 
 
