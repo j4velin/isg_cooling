@@ -70,10 +70,13 @@ def get_option(entry: ConfigEntry, key: str, default: Any) -> Any:
 def _async_find_isg_device(hass: HomeAssistant, entry: ConfigEntry) -> dr.DeviceEntry | None:
     """the device of the Stiebel Eltron ISG integration for this ISG: the only
     one, or among several the one with the same host"""
+    # only the devices of that integration's config entries: other
+    # integrations' devices may have identifiers of any shape
+    dev_reg = dr.async_get(hass)
     devices = [
         device
-        for device in dr.async_get(hass).devices.values()
-        if any(domain == STIEBEL_ELTRON_ISG_DOMAIN for domain, _ in device.identifiers)
+        for isg_entry in hass.config_entries.async_entries(STIEBEL_ELTRON_ISG_DOMAIN)
+        for device in dr.async_entries_for_config_entry(dev_reg, isg_entry.entry_id)
     ]
     if len(devices) == 1:
         return devices[0]
