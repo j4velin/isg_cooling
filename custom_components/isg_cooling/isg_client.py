@@ -16,6 +16,7 @@ from .const import (
     ENERGY_PAGE_PATH,
     ISG_TEXTS,
     LOGIN_SUCCESS_MARKER,
+    NETWORK_PAGE_PATH,
     VAL_COOLING,
     IsgTexts,
 )
@@ -70,6 +71,33 @@ def _normalize_key(text: str) -> str:
     return re.sub(r"\s+", "", text).replace("–", "-").upper()
 
 
+# the separator after the first pair (\2) has to be used throughout
+_MAC_PATTERN = re.compile(
+    r"(?<![0-9A-Fa-f:-])([0-9A-Fa-f]{2}([:-])[0-9A-Fa-f]{2}(?:\2[0-9A-Fa-f]{2}){4})(?![0-9A-Fa-f:-])"
+)
+
+
+def normalize_host(host: str) -> str:
+    """'  http://ISG.lan/ ' -> 'isg.lan', so the same host is always written
+    the same way"""
+    host = host.strip()
+    host = re.sub(r"^https?://", "", host, flags=re.IGNORECASE)
+    return host.rstrip("/").lower()
+
+
+def is_mac(value: str | None) -> bool:
+    """True for a MAC address like 00:11:22:33:44:55"""
+    return value is not None and _MAC_PATTERN.fullmatch(value) is not None
+
+
+def _find_mac(html: str) -> str | None:
+    """the MAC address on the page, lower case with colons"""
+    match = _MAC_PATTERN.search(html)
+    if match is None:
+        return None
+    return match.group(1).replace("-", ":").lower()
+
+
 def _check_save_answer(answer: str) -> None:
     """save.php answers with JSON: success, warning or errors per field"""
     try:
@@ -111,7 +139,7 @@ class IsgClient:
         login_marker: str = LOGIN_SUCCESS_MARKER,
     ) -> None:
         self._session = session
-        self._base = f"http://{host.rstrip('/')}/"
+        self._base = f"http://{normalize_host(host)}/"
         self._username = username
         self._password = password
         self._login_marker = login_marker
@@ -251,6 +279,10 @@ class IsgClient:
             last_12m=values.get(texts.key_cooling_12m),
             last_prev_12m=values.get(texts.key_cooling_prev_12m),
         )
+
+    async def async_get_mac(self) -> str | None:
+        """MAC address from PROFIL > NETZWERK, None if not shown"""
+        return _find_mac(await self._async_get_page(NETWORK_PAGE_PATH))
 
     async def async_get_cooling_state(self) -> bool:
         """True, if cooling (KÜHLBETRIEB, val73) is on"""

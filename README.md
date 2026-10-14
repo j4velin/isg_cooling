@@ -79,7 +79,13 @@ Once installed via HACS, you will be notified of new releases and can update wit
    - **Power consumption poll interval (minutes)** *(defaults to 10; how often the 1-24 h sensor is read from the ISG, which updates it hourly. The ISG is only polled while that sensor is enabled; the total does not depend on it; see [How the total is calculated](#how-the-total-is-calculated))*
 4. Finish setup.
 
-Both poll intervals can be changed later: go to **Settings** → **Devices & services** → **LWZ Kühlbetrieb** and click **Configure**. The integration reloads with the new intervals; the cooling power consumption total is kept.
+The poll intervals can be changed later: go to **Settings** → **Devices & services** → **LWZ Kühlbetrieb** and click **Configure**. The integration reloads with the new settings; the cooling power consumption total is kept.
+
+### Combining with the Stiebel Eltron ISG integration
+
+This integration has its own device for the ISG. If the [Stiebel Eltron ISG integration](https://github.com/pail23/stiebel_eltron_isg_component) is installed too, the device is linked to its device automatically: this device shows *Connected via* the Stiebel Eltron ISG device, and that one lists this device under its connected devices. With several Stiebel Eltron ISG devices, the one with the same host is used. The link is checked at every start, so it also works if the Stiebel Eltron ISG integration is installed later.
+
+Since Home Assistant 2026.8, a device belongs to a single integration, so the entities of both integrations can't share one device page.
 
 ## Usage
 

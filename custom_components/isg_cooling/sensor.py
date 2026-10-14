@@ -13,6 +13,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfEnergy
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.restore_state import RestoredExtraData
@@ -38,6 +39,7 @@ async def async_setup_entry(
     """create consumption sensors from config."""
     runtime: IsgRuntimeData = hass.data[DOMAIN][entry.entry_id]
     coordinator = runtime.consumption
+    device_info = runtime.device_info
 
     # the 1-12 M sensor was removed, the total covers it
     registry = er.async_get(hass)
@@ -48,8 +50,8 @@ async def async_setup_entry(
 
     async_add_entities(
         [
-            IsgCoolingConsumption24hSensor(coordinator, entry),
-            IsgCoolingConsumptionTotalSensor(coordinator, entry),
+            IsgCoolingConsumption24hSensor(coordinator, entry, device_info),
+            IsgCoolingConsumptionTotalSensor(coordinator, entry, device_info),
         ]
     )
 
@@ -80,9 +82,11 @@ class IsgCoolingConsumption24hSensor(CoordinatorEntity, IsgCoolingConsumptionSen
         self,
         coordinator: DataUpdateCoordinator[IsgCoolingConsumption],
         entry: ConfigEntry,
+        device_info: DeviceInfo,
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_{self._attr_translation_key}"
+        self._attr_device_info = device_info
 
     @property
     def native_value(self) -> float | None:
@@ -107,9 +111,11 @@ class IsgCoolingConsumptionTotalSensor(IsgCoolingConsumptionSensor, RestoreSenso
         self,
         coordinator: DataUpdateCoordinator[IsgCoolingConsumption],
         entry: ConfigEntry,
+        device_info: DeviceInfo,
     ) -> None:
         self._coordinator = coordinator
         self._attr_unique_id = f"{entry.entry_id}_{self._attr_translation_key}"
+        self._attr_device_info = device_info
         self._total = CoolingConsumptionTotal()
 
     async def async_added_to_hass(self) -> None:

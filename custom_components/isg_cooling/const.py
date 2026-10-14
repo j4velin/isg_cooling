@@ -10,6 +10,8 @@ CONF_PASSWORD = "password"
 CONF_LOGIN_MARKER = "login_marker"
 CONF_SCAN_INTERVAL = "scan_interval"
 CONF_CONSUMPTION_SCAN_INTERVAL = "consumption_scan_interval"
+# domain of the Stiebel Eltron ISG integration (pail23/stiebel_eltron_isg_component)
+STIEBEL_ELTRON_ISG_DOMAIN = "stiebel_eltron_isg"
 
 # Servicewelt path "EINSTELLUNGEN > KÜHLEN > KÜHLBETRIEB HK1"
 COOLING_PAGE_PATH = "?s=4,3,2"
@@ -19,6 +21,9 @@ VAL_COOLING = "val73"
 
 # Servicewelt path "INFO > ENERGIEBILANZ" (english: "INFO > ENERGY FOOTPRINT")
 ENERGY_PAGE_PATH = "?s=1,2"
+
+# Servicewelt path "PROFIL > NETZWERK", shows the MAC address of the ISG
+NETWORK_PAGE_PATH = "?s=5,0"
 
 
 @dataclass(frozen=True)
