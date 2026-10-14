@@ -19,7 +19,6 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .const import (
     CONF_CONSUMPTION_SCAN_INTERVAL,
     CONF_HOST,
-    CONF_JOIN_ISG_DEVICE,
     CONF_LOGIN_MARKER,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
@@ -103,7 +102,7 @@ def _async_find_isg_device(hass: HomeAssistant, entry: ConfigEntry) -> dr.Device
 @callback
 def _async_setup_device(hass: HomeAssistant, entry: ConfigEntry) -> DeviceInfo:
     """the device of the entities: the one of the Stiebel Eltron ISG
-    integration if there is one (and it isn't turned off), else an own device
+    integration if there is one, else an own device
 
     Also moves the entities when the device changed. Leaving a device makes
     Home Assistant delete the entities of this entry that are still on it,
@@ -111,11 +110,10 @@ def _async_setup_device(hass: HomeAssistant, entry: ConfigEntry) -> DeviceInfo:
     """
     dev_reg = dr.async_get(hass)
     info = _own_device_info(entry)
-    if get_option(entry, CONF_JOIN_ISG_DEVICE, True):
-        isg_device = _async_find_isg_device(hass, entry)
-        if isg_device is not None:
-            # only the identifiers: the entities join that device as it is
-            info = DeviceInfo(identifiers=isg_device.identifiers)
+    isg_device = _async_find_isg_device(hass, entry)
+    if isg_device is not None:
+        # only the identifiers: the entities join that device as it is
+        info = DeviceInfo(identifiers=isg_device.identifiers)
     device = dev_reg.async_get_or_create(config_entry_id=entry.entry_id, **info)
 
     ent_reg = er.async_get(hass)

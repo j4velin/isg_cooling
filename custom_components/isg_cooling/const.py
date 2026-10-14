@@ -10,9 +10,6 @@ CONF_PASSWORD = "password"
 CONF_LOGIN_MARKER = "login_marker"
 CONF_SCAN_INTERVAL = "scan_interval"
 CONF_CONSUMPTION_SCAN_INTERVAL = "consumption_scan_interval"
-# join the device of the Stiebel Eltron ISG integration, if there is one
-CONF_JOIN_ISG_DEVICE = "join_stiebel_eltron_isg_device"
-
 # domain of the Stiebel Eltron ISG integration (pail23/stiebel_eltron_isg_component)
 STIEBEL_ELTRON_ISG_DOMAIN = "stiebel_eltron_isg"
 

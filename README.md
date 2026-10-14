@@ -80,7 +80,7 @@ The poll intervals can be changed later: go to **Settings** → **Devices & serv
 
 ### Combining with the Stiebel Eltron ISG integration
 
-If the [Stiebel Eltron ISG integration](https://github.com/pail23/stiebel_eltron_isg_component) is installed too, the cooling switch and sensors of this integration are added to its device automatically, so all values of the heat pump appear on one device page. With several of its devices, the one with the same host is used. This is checked at every start, so it also works if the Stiebel Eltron ISG integration is installed later. To keep an own device instead, turn off **Use the device of the Stiebel Eltron ISG integration** under **Configure**. Switching moves the entities; their entity IDs and history stay the same.
+If the [Stiebel Eltron ISG integration](https://github.com/pail23/stiebel_eltron_isg_component) is installed too, the cooling switch and sensors of this integration are added to its device automatically, so all values of the heat pump appear on one device page. With several of its devices, the one with the same host is used. This is checked at every start, so it also works if the Stiebel Eltron ISG integration is installed later; the entities keep their entity IDs and history when they move. Without the Stiebel Eltron ISG integration, this integration has its own device.
 
 ## Usage
 

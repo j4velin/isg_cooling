@@ -9,7 +9,6 @@ from . import async_create_isg_session, create_client, get_option
 from .const import (
     CONF_CONSUMPTION_SCAN_INTERVAL,
     CONF_HOST,
-    CONF_JOIN_ISG_DEVICE,
     CONF_LOGIN_MARKER,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
@@ -105,7 +104,7 @@ class IsgConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class IsgOptionsFlow(config_entries.OptionsFlow):
-    """change the poll intervals and the device after setup"""
+    """change the poll intervals after setup"""
 
     def __init__(self, entry: config_entries.ConfigEntry) -> None:
         # not stored as self.config_entry, which newer HA versions set itself
@@ -118,21 +117,15 @@ class IsgOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
-                {
-                    **_interval_fields(
-                        get_option(
-                            self._entry, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_HOURS
-                        ),
-                        get_option(
-                            self._entry,
-                            CONF_CONSUMPTION_SCAN_INTERVAL,
-                            DEFAULT_CONSUMPTION_SCAN_INTERVAL_MINUTES,
-                        ),
+                _interval_fields(
+                    get_option(
+                        self._entry, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_HOURS
                     ),
-                    vol.Required(
-                        CONF_JOIN_ISG_DEVICE,
-                        default=get_option(self._entry, CONF_JOIN_ISG_DEVICE, True),
-                    ): bool,
-                }
+                    get_option(
+                        self._entry,
+                        CONF_CONSUMPTION_SCAN_INTERVAL,
+                        DEFAULT_CONSUMPTION_SCAN_INTERVAL_MINUTES,
+                    ),
+                )
             ),
         )
