@@ -103,7 +103,9 @@ class IsgCoolingConsumptionTotalSensor(IsgCoolingConsumptionSensor, RestoreSenso
 
     _attr_translation_key = "cooling_consumption_total"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
-    _attr_suggested_display_precision = 3
+    # whole kWh like the ISG's 12-month windows it starts from; the value
+    # itself keeps the decimals of the daily 1-24 h readings
+    _attr_suggested_display_precision = 0
     # only the daily reading changes it, Home Assistant mustn't poll it
     _attr_should_poll = False
 
