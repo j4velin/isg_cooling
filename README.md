@@ -28,7 +28,7 @@ In statistics and the Energy dashboard, a day's consumption is booked on that da
 
 The integration communicates directly with the heat pump's local web interface and does not require any cloud service.
 
-> **Note:** This integration has so far only been tested with **Servicewelt version 12.2.3**, set to **German** or **English**. Other Servicewelt versions may work but are untested. For other languages, adjust the **Login success marker** field during setup (see [Configuration](#configuration)); the power consumption sensors only support German and English.
+> **Note:** This integration has so far only been tested with **Servicewelt version 12.2.3**, set to **German** or **English**. Other Servicewelt versions may work but are untested. With another language, the cooling switch works if the **Login success marker** is set to that language's login text during setup (see [Configuration](#configuration)). The power consumption sensors additionally need the language's texts in the integration; see [Development](#development) for how to add a language, or open an issue with a saved copy of the ISG page **INFO → ENERGIEBILANZ** (`?s=1,2`).
 
 ## Requirements
 
