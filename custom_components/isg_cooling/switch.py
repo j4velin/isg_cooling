@@ -5,13 +5,14 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
 )
 
-from . import IsgRuntimeData, device_info
+from . import IsgRuntimeData
 from .const import DOMAIN
 from .isg_client import IsgAuthError, IsgClient, IsgConnectionError
 
@@ -21,7 +22,9 @@ async def async_setup_entry(
 ) -> None:
     """create switch entity from config."""
     runtime: IsgRuntimeData = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([IsgCoolingSwitch(runtime.cooling, runtime.client, entry)])
+    async_add_entities(
+        [IsgCoolingSwitch(runtime.cooling, runtime.client, entry, runtime.device_info)]
+    )
 
 
 class IsgCoolingSwitch(CoordinatorEntity, SwitchEntity):
@@ -36,11 +39,12 @@ class IsgCoolingSwitch(CoordinatorEntity, SwitchEntity):
         coordinator: DataUpdateCoordinator[bool],
         client: IsgClient,
         entry: ConfigEntry,
+        device_info: DeviceInfo,
     ) -> None:
         super().__init__(coordinator)
         self._client = client
         self._attr_unique_id = f"{entry.entry_id}_val73"
-        self._attr_device_info = device_info(entry)
+        self._attr_device_info = device_info
 
     @property
     def is_on(self) -> bool:

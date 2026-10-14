@@ -10,6 +10,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfEnergy
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoredExtraData
 from homeassistant.helpers.update_coordinator import (
@@ -18,7 +19,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import dt as dt_util
 
-from . import IsgRuntimeData, device_info
+from . import IsgRuntimeData
 from .consumption_total import CoolingConsumptionTotal
 from .const import DOMAIN
 from .isg_client import IsgCoolingConsumption
@@ -30,12 +31,13 @@ async def async_setup_entry(
     """create consumption sensors from config."""
     runtime: IsgRuntimeData = hass.data[DOMAIN][entry.entry_id]
     coordinator = runtime.consumption
+    device_info = runtime.device_info
 
     async_add_entities(
         [
-            IsgCoolingConsumption24hSensor(coordinator, entry),
-            IsgCoolingConsumption12mSensor(coordinator, entry),
-            IsgCoolingConsumptionTotalSensor(coordinator, entry),
+            IsgCoolingConsumption24hSensor(coordinator, entry, device_info),
+            IsgCoolingConsumption12mSensor(coordinator, entry, device_info),
+            IsgCoolingConsumptionTotalSensor(coordinator, entry, device_info),
         ]
     )
 
@@ -52,10 +54,11 @@ class IsgCoolingConsumptionSensor(CoordinatorEntity, SensorEntity):
         self,
         coordinator: DataUpdateCoordinator[IsgCoolingConsumption],
         entry: ConfigEntry,
+        device_info: DeviceInfo,
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_{self._attr_translation_key}"
-        self._attr_device_info = device_info(entry)
+        self._attr_device_info = device_info
 
 
 class IsgCoolingConsumption24hSensor(IsgCoolingConsumptionSensor):
@@ -93,8 +96,9 @@ class IsgCoolingConsumptionTotalSensor(IsgCoolingConsumptionSensor, RestoreSenso
         self,
         coordinator: DataUpdateCoordinator[IsgCoolingConsumption],
         entry: ConfigEntry,
+        device_info: DeviceInfo,
     ) -> None:
-        super().__init__(coordinator, entry)
+        super().__init__(coordinator, entry, device_info)
         self._total = CoolingConsumptionTotal()
 
     async def async_added_to_hass(self) -> None:

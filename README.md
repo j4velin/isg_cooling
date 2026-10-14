@@ -74,9 +74,14 @@ Once installed via HACS, you will be notified of new releases and can update wit
    - **Login success marker** *(defaults to `angemeldet als`; the German and English markers are always recognized, so only change it if your ISG uses another language)*
    - **Poll interval (hours)** *(defaults to 24; how often the cooling state is read from the ISG)*
    - **Power consumption poll interval (minutes)** *(defaults to 10; how often the power consumption sensors are read from the ISG. A shorter interval loses less consumption at midnight for the total; see [How the total is calculated](#how-the-total-is-calculated))*
+   - **Device of the Stiebel Eltron ISG integration** *(optional; see [Combining with the Stiebel Eltron ISG integration](#combining-with-the-stiebel-eltron-isg-integration))*
 4. Finish setup.
 
-Both poll intervals can be changed later: go to **Settings** → **Devices & services** → **LWZ Kühlbetrieb** and click **Configure**. The integration reloads with the new intervals; the cooling power consumption total is kept.
+The poll intervals and the linked device can be changed later: go to **Settings** → **Devices & services** → **LWZ Kühlbetrieb** and click **Configure**. The integration reloads with the new settings; the cooling power consumption total is kept.
+
+### Combining with the Stiebel Eltron ISG integration
+
+If the [Stiebel Eltron ISG integration](https://github.com/pail23/stiebel_eltron_isg_component) is installed too, its device can be selected during setup (or later under **Configure**). The cooling switch and sensors of this integration are then added to that device, so all values of the heat pump appear on one device page. If there is exactly one such device, it is pre-selected during setup. Leave the field empty to get an own device instead. Changing the selection later moves the entities; their entity IDs and history stay the same.
 
 ## Usage
 

@@ -9,7 +9,9 @@ from typing import Any
 import aiohttp
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -17,6 +19,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .const import (
     CONF_CONSUMPTION_SCAN_INTERVAL,
     CONF_HOST,
+    CONF_LINKED_DEVICE,
     CONF_LOGIN_MARKER,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
@@ -46,6 +49,8 @@ class IsgRuntimeData:
     client: IsgClient
     cooling: DataUpdateCoordinator[bool]
     consumption: DataUpdateCoordinator[IsgCoolingConsumption]
+    # the device the entities belong to, see _async_setup_device()
+    device_info: DeviceInfo
 
 
 def get_option(entry: ConfigEntry, key: str, default: Any) -> Any:
@@ -53,8 +58,8 @@ def get_option(entry: ConfigEntry, key: str, default: Any) -> Any:
     return entry.options.get(key, entry.data.get(key, default))
 
 
-def device_info(entry: ConfigEntry) -> DeviceInfo:
-    """one device per ISG, so its entities appear together"""
+def _own_device_info(entry: ConfigEntry) -> DeviceInfo:
+    """own device for the ISG, if it isn't linked to another one"""
     info = DeviceInfo(
         identifiers={(DOMAIN, entry.entry_id)},
         name=entry.title,
@@ -64,6 +69,40 @@ def device_info(entry: ConfigEntry) -> DeviceInfo:
     )
     if is_mac(entry.unique_id):
         info["connections"] = {(CONNECTION_NETWORK_MAC, entry.unique_id)}
+    return info
+
+
+@callback
+def _async_setup_device(hass: HomeAssistant, entry: ConfigEntry) -> DeviceInfo:
+    """the device of the entities: the linked one, e.g. of the Stiebel Eltron
+    ISG integration, or an own device
+
+    Also moves the entities when the link changed. Leaving a device makes
+    Home Assistant delete the entities of this entry that are still on it,
+    so the entities are moved to the new device first.
+    """
+    dev_reg = dr.async_get(hass)
+    info = _own_device_info(entry)
+    linked_id = get_option(entry, CONF_LINKED_DEVICE, None)
+    if linked_id:
+        linked = dev_reg.async_get(linked_id)
+        if linked is not None:
+            # only the identifiers: the entities join that device as it is
+            info = DeviceInfo(identifiers=linked.identifiers)
+        else:
+            _LOGGER.warning(
+                "The linked device of %s doesn't exist anymore, using an own device",
+                entry.title,
+            )
+    device = dev_reg.async_get_or_create(config_entry_id=entry.entry_id, **info)
+
+    ent_reg = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(ent_reg, entry.entry_id):
+        if entity.device_id != device.id:
+            ent_reg.async_update_entity(entity.entity_id, device_id=device.id)
+    for old in dr.async_entries_for_config_entry(dev_reg, entry.entry_id):
+        if old.id != device.id:
+            dev_reg.async_update_device(old.id, remove_config_entry_id=entry.entry_id)
     return info
 
 
@@ -135,7 +174,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await _async_use_mac_as_unique_id(hass, entry, client)
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = IsgRuntimeData(
-        client, cooling, consumption
+        client, cooling, consumption, _async_setup_device(hass, entry)
     )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))

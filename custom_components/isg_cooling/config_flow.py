@@ -3,12 +3,15 @@ from __future__ import annotations
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import selector
 
 from . import async_create_isg_session, create_client, get_option
 from .const import (
     CONF_CONSUMPTION_SCAN_INTERVAL,
     CONF_HOST,
+    CONF_LINKED_DEVICE,
     CONF_LOGIN_MARKER,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
@@ -17,6 +20,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL_HOURS,
     DOMAIN,
     LOGIN_SUCCESS_MARKER,
+    STIEBEL_ELTRON_ISG_DOMAIN,
 )
 from .isg_client import IsgAuthError, IsgClient, IsgConnectionError
 
@@ -33,21 +37,44 @@ def _interval_fields(scan_interval: int, consumption_scan_interval: int) -> dict
     }
 
 
-DATA_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_HOST, default="isg.lan"): str,
-        vol.Optional(CONF_USERNAME, default=""): str,
-        vol.Optional(CONF_PASSWORD, default=""): str,
-        # an empty marker would be found on every page, so a failed login
-        # would go unnoticed
-        vol.Required(CONF_LOGIN_MARKER, default=LOGIN_SUCCESS_MARKER): vol.All(
-            str, vol.Length(min=1)
-        ),
-        **_interval_fields(
-            DEFAULT_SCAN_INTERVAL_HOURS, DEFAULT_CONSUMPTION_SCAN_INTERVAL_MINUTES
-        ),
+def _linked_device_field(suggested: str | None) -> dict:
+    """optional device of the Stiebel Eltron ISG integration to join"""
+    description = {"suggested_value": suggested} if suggested else None
+    return {
+        vol.Optional(CONF_LINKED_DEVICE, description=description): selector.DeviceSelector(
+            selector.DeviceSelectorConfig(integration=STIEBEL_ELTRON_ISG_DOMAIN)
+        )
     }
-)
+
+
+@callback
+def _async_suggested_device(hass: HomeAssistant) -> str | None:
+    """the device of the Stiebel Eltron ISG integration, if there is exactly one"""
+    devices = [
+        device.id
+        for device in dr.async_get(hass).devices.values()
+        if any(domain == STIEBEL_ELTRON_ISG_DOMAIN for domain, _ in device.identifiers)
+    ]
+    return devices[0] if len(devices) == 1 else None
+
+
+def _user_schema(suggested_device: str | None) -> vol.Schema:
+    return vol.Schema(
+        {
+            vol.Required(CONF_HOST, default="isg.lan"): str,
+            vol.Optional(CONF_USERNAME, default=""): str,
+            vol.Optional(CONF_PASSWORD, default=""): str,
+            # an empty marker would be found on every page, so a failed login
+            # would go unnoticed
+            vol.Required(CONF_LOGIN_MARKER, default=LOGIN_SUCCESS_MARKER): vol.All(
+                str, vol.Length(min=1)
+            ),
+            **_interval_fields(
+                DEFAULT_SCAN_INTERVAL_HOURS, DEFAULT_CONSUMPTION_SCAN_INTERVAL_MINUTES
+            ),
+            **_linked_device_field(suggested_device),
+        }
+    )
 
 
 class IsgConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -91,7 +118,9 @@ class IsgConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await session.close()
 
         return self.async_show_form(
-            step_id="user", data_schema=DATA_SCHEMA, errors=errors
+            step_id="user",
+            data_schema=_user_schema(_async_suggested_device(self.hass)),
+            errors=errors,
         )
 
     @staticmethod
@@ -104,7 +133,7 @@ class IsgConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class IsgOptionsFlow(config_entries.OptionsFlow):
-    """change the poll intervals after setup"""
+    """change the poll intervals and the linked device after setup"""
 
     def __init__(self, entry: config_entries.ConfigEntry) -> None:
         # not stored as self.config_entry, which newer HA versions set itself
@@ -112,20 +141,29 @@ class IsgOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input: dict | None = None):
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            # a cleared device field is missing in user_input; store it empty,
+            # otherwise get_option() would fall back to the setup's device
+            return self.async_create_entry(
+                title="", data={CONF_LINKED_DEVICE: "", **user_input}
+            )
 
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
-                _interval_fields(
-                    get_option(
-                        self._entry, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_HOURS
+                {
+                    **_interval_fields(
+                        get_option(
+                            self._entry, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_HOURS
+                        ),
+                        get_option(
+                            self._entry,
+                            CONF_CONSUMPTION_SCAN_INTERVAL,
+                            DEFAULT_CONSUMPTION_SCAN_INTERVAL_MINUTES,
+                        ),
                     ),
-                    get_option(
-                        self._entry,
-                        CONF_CONSUMPTION_SCAN_INTERVAL,
-                        DEFAULT_CONSUMPTION_SCAN_INTERVAL_MINUTES,
+                    **_linked_device_field(
+                        get_option(self._entry, CONF_LINKED_DEVICE, None)
                     ),
-                )
+                }
             ),
         )

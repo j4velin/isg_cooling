@@ -10,6 +10,12 @@ CONF_PASSWORD = "password"
 CONF_LOGIN_MARKER = "login_marker"
 CONF_SCAN_INTERVAL = "scan_interval"
 CONF_CONSUMPTION_SCAN_INTERVAL = "consumption_scan_interval"
+# device_id of a device the entities join, e.g. of the Stiebel Eltron ISG
+# integration; empty for an own device
+CONF_LINKED_DEVICE = "linked_device"
+
+# domain of the Stiebel Eltron ISG integration (pail23/stiebel_eltron_isg_component)
+STIEBEL_ELTRON_ISG_DOMAIN = "stiebel_eltron_isg"
 
 # Servicewelt path "EINSTELLUNGEN > KÜHLEN > KÜHLBETRIEB HK1"
 COOLING_PAGE_PATH = "?s=4,3,2"
