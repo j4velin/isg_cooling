@@ -19,7 +19,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .const import (
     CONF_CONSUMPTION_SCAN_INTERVAL,
     CONF_HOST,
-    CONF_LINKED_DEVICE,
+    CONF_JOIN_ISG_DEVICE,
     CONF_LOGIN_MARKER,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
@@ -28,6 +28,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL_HOURS,
     DOMAIN,
     LOGIN_SUCCESS_MARKER,
+    STIEBEL_ELTRON_ISG_DOMAIN,
 )
 from .isg_client import (
     IsgAuthError,
@@ -73,27 +74,48 @@ def _own_device_info(entry: ConfigEntry) -> DeviceInfo:
 
 
 @callback
-def _async_setup_device(hass: HomeAssistant, entry: ConfigEntry) -> DeviceInfo:
-    """the device of the entities: the linked one, e.g. of the Stiebel Eltron
-    ISG integration, or an own device
+def _async_find_isg_device(hass: HomeAssistant, entry: ConfigEntry) -> dr.DeviceEntry | None:
+    """the device of the Stiebel Eltron ISG integration for this ISG: the only
+    one, or among several the one with the same host"""
+    devices = [
+        device
+        for device in dr.async_get(hass).devices.values()
+        if any(domain == STIEBEL_ELTRON_ISG_DOMAIN for domain, _ in device.identifiers)
+    ]
+    if len(devices) == 1:
+        return devices[0]
+    host = entry.data[CONF_HOST].rstrip("/")
+    matching = [
+        device
+        for device in devices
+        if (device.configuration_url or "").rstrip("/") == f"http://{host}"
+    ]
+    if len(matching) == 1:
+        return matching[0]
+    if devices:
+        _LOGGER.info(
+            "Several Stiebel Eltron ISG devices, none with host %s: using an own device",
+            host,
+        )
+    return None
 
-    Also moves the entities when the link changed. Leaving a device makes
+
+@callback
+def _async_setup_device(hass: HomeAssistant, entry: ConfigEntry) -> DeviceInfo:
+    """the device of the entities: the one of the Stiebel Eltron ISG
+    integration if there is one (and it isn't turned off), else an own device
+
+    Also moves the entities when the device changed. Leaving a device makes
     Home Assistant delete the entities of this entry that are still on it,
     so the entities are moved to the new device first.
     """
     dev_reg = dr.async_get(hass)
     info = _own_device_info(entry)
-    linked_id = get_option(entry, CONF_LINKED_DEVICE, None)
-    if linked_id:
-        linked = dev_reg.async_get(linked_id)
-        if linked is not None:
+    if get_option(entry, CONF_JOIN_ISG_DEVICE, True):
+        isg_device = _async_find_isg_device(hass, entry)
+        if isg_device is not None:
             # only the identifiers: the entities join that device as it is
-            info = DeviceInfo(identifiers=linked.identifiers)
-        else:
-            _LOGGER.warning(
-                "The linked device of %s doesn't exist anymore, using an own device",
-                entry.title,
-            )
+            info = DeviceInfo(identifiers=isg_device.identifiers)
     device = dev_reg.async_get_or_create(config_entry_id=entry.entry_id, **info)
 
     ent_reg = er.async_get(hass)

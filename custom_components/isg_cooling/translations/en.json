@@ -9,15 +9,13 @@
           "password": "Password",
           "login_marker": "Login success marker",
           "scan_interval": "Poll interval (hours)",
-          "consumption_scan_interval": "Power consumption poll interval (minutes)",
-          "linked_device": "Device of the Stiebel Eltron ISG integration"
+          "consumption_scan_interval": "Power consumption poll interval (minutes)"
         },
         "data_description": {
           "username": "Leave username and password empty if your ISG does not require a login. The login request is then skipped entirely.",
           "login_marker": "Text that appears on the page after a successful login. Depends on the ISG device's language. German and English are always recognized; only change it for other languages. Ignored when no credentials are set.",
           "scan_interval": "How often Home Assistant reads the cooling state from the ISG, in hours. Default is 24.",
-          "consumption_scan_interval": "How often Home Assistant reads the cooling power consumption from the ISG, in minutes. Default is 10. Consumption after the last reading before midnight is missing from the total.",
-          "linked_device": "Optional. The switch and the sensors are added to this device of the Stiebel Eltron ISG integration, so all values of the heat pump appear together. Leave empty for an own device."
+          "consumption_scan_interval": "How often Home Assistant reads the cooling power consumption from the ISG, in minutes. Default is 10. Consumption after the last reading before midnight is missing from the total."
         }
       }
     },
@@ -36,12 +34,12 @@
         "data": {
           "scan_interval": "Poll interval (hours)",
           "consumption_scan_interval": "Power consumption poll interval (minutes)",
-          "linked_device": "Device of the Stiebel Eltron ISG integration"
+          "join_stiebel_eltron_isg_device": "Use the device of the Stiebel Eltron ISG integration"
         },
         "data_description": {
           "scan_interval": "How often Home Assistant reads the cooling state from the ISG, in hours. Default is 24.",
           "consumption_scan_interval": "How often Home Assistant reads the cooling power consumption from the ISG, in minutes. Default is 10. Consumption after the last reading before midnight is missing from the total.",
-          "linked_device": "Optional. The switch and the sensors are added to this device of the Stiebel Eltron ISG integration, so all values of the heat pump appear together. Leave empty for an own device."
+          "join_stiebel_eltron_isg_device": "If the Stiebel Eltron ISG integration is installed, the switch and the sensors are added to its device, so all values of the heat pump appear together. Turn off for an own device."
         }
       }
     }

@@ -9,15 +9,13 @@
           "password": "Passwort",
           "login_marker": "Login-Erfolgskennung",
           "scan_interval": "Abfrageintervall (Stunden)",
-          "consumption_scan_interval": "Abfrageintervall Stromverbrauch (Minuten)",
-          "linked_device": "Gerät der Stiebel Eltron ISG-Integration"
+          "consumption_scan_interval": "Abfrageintervall Stromverbrauch (Minuten)"
         },
         "data_description": {
           "username": "Benutzername und Passwort leer lassen, wenn Ihr ISG keine Anmeldung erfordert. Die Anmeldung wird dann komplett übersprungen.",
           "login_marker": "Text, der nach erfolgreicher Anmeldung auf der Seite erscheint. Hängt von der Sprache des ISG-Geräts ab. Deutsch und Englisch werden immer erkannt; nur für andere Sprachen ändern. Wird ignoriert, wenn keine Anmeldedaten gesetzt sind.",
           "scan_interval": "Wie oft Home Assistant den Kühlstatus vom ISG abfragt, in Stunden. Standard ist 24.",
-          "consumption_scan_interval": "Wie oft Home Assistant den Stromverbrauch fürs Kühlen vom ISG abfragt, in Minuten. Standard ist 10. Verbrauch nach der letzten Abfrage vor Mitternacht fehlt im Gesamtverbrauch.",
-          "linked_device": "Optional. Schalter und Sensoren werden diesem Gerät der Stiebel Eltron ISG-Integration hinzugefügt, damit alle Werte der Wärmepumpe zusammen erscheinen. Leer lassen für ein eigenes Gerät."
+          "consumption_scan_interval": "Wie oft Home Assistant den Stromverbrauch fürs Kühlen vom ISG abfragt, in Minuten. Standard ist 10. Verbrauch nach der letzten Abfrage vor Mitternacht fehlt im Gesamtverbrauch."
         }
       }
     },
@@ -36,12 +34,12 @@
         "data": {
           "scan_interval": "Abfrageintervall (Stunden)",
           "consumption_scan_interval": "Abfrageintervall Stromverbrauch (Minuten)",
-          "linked_device": "Gerät der Stiebel Eltron ISG-Integration"
+          "join_stiebel_eltron_isg_device": "Gerät der Stiebel Eltron ISG-Integration verwenden"
         },
         "data_description": {
           "scan_interval": "Wie oft Home Assistant den Kühlstatus vom ISG abfragt, in Stunden. Standard ist 24.",
           "consumption_scan_interval": "Wie oft Home Assistant den Stromverbrauch fürs Kühlen vom ISG abfragt, in Minuten. Standard ist 10. Verbrauch nach der letzten Abfrage vor Mitternacht fehlt im Gesamtverbrauch.",
-          "linked_device": "Optional. Schalter und Sensoren werden diesem Gerät der Stiebel Eltron ISG-Integration hinzugefügt, damit alle Werte der Wärmepumpe zusammen erscheinen. Leer lassen für ein eigenes Gerät."
+          "join_stiebel_eltron_isg_device": "Ist die Stiebel Eltron ISG-Integration installiert, werden Schalter und Sensoren ihrem Gerät hinzugefügt, damit alle Werte der Wärmepumpe zusammen erscheinen. Ausschalten für ein eigenes Gerät."
         }
       }
     }
