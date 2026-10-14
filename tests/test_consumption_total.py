@@ -35,15 +35,17 @@ def window_24h(t: datetime) -> float:
 
 
 def window_12m(t: datetime) -> float:
-    return round(SEED_12M + sum(BUCKETS[:hours_done(t)]), 3)
+    """updated once a day, so it reaches until the last midnight"""
+    return round(SEED_12M + sum(BUCKETS[:hours_done(t) // 24 * 24]), 3)
 
 
 def read(total: CoolingConsumptionTotal, t: datetime) -> None:
     total.update(window_24h(t), window_12m(t), 0.0, t)
 
 
-def run(added=START + timedelta(hours=14, minutes=3), offline=lambda t: False, restarts=()):
+def run(added=None, offline=lambda t: False, restarts=()):
     """returns the total and all its values, minute by minute"""
+    added = added or ADDED
     total = CoolingConsumptionTotal()
     read(total, added)  # setup reading
     values, t = [], added
@@ -71,10 +73,18 @@ def consumption_until_23(day: datetime) -> float:
     return sum(BUCKETS[i - 24:i])
 
 
-def expected(first_day=START, lost_days=()) -> float:
-    """seed at the first evening reading + every later day that was read"""
-    want = window_12m(first_day.replace(hour=23, minute=15))
-    day = first_day + timedelta(days=1)
+# set up on the third day, so the day before has consumption
+ADDED = START + timedelta(days=2, hours=14, minutes=3)
+
+
+def expected(added=ADDED, lost_days=()) -> float:
+    """seed at setup + every evening reading after it"""
+    want = window_12m(added)
+    day = added.replace(hour=0, minute=0)
+    if added.hour == 23 and added.minute >= 10:
+        # set up during the reading window: today counted right away
+        want += window_24h(added)
+        day += timedelta(days=1)
     while day.replace(hour=23, minute=15) <= END:
         if day.date() not in lost_days:
             want += consumption_until_23(day)
@@ -82,10 +92,23 @@ def expected(first_day=START, lost_days=()) -> float:
     return round(want, 3)
 
 
-def test_unknown_before_the_first_daily_reading():
+def true_consumption(until: datetime) -> float:
+    return round(SEED_12M + sum(BUCKETS[:hour_index(until)]), 3)
+
+
+def test_value_right_after_setup():
     total = CoolingConsumptionTotal()
-    read(total, START + timedelta(hours=14))
-    assert total.value is None
+    read(total, ADDED)
+    assert total.value == window_12m(ADDED)
+
+
+def test_overlap_of_the_start_value_is_one_hour():
+    # the first evening reading starts at 23:00 the day before, the start
+    # value ends at midnight: 23:00-24:00 of that day is counted twice
+    total, _ = run()
+    last_reading = (END - timedelta(days=1)).replace(hour=23, minute=0)
+    overlap_hour = BUCKETS[hour_index(ADDED.replace(hour=0, minute=0)) - 1]
+    assert total.value == round(true_consumption(last_reading) + overlap_hour, 3)
 
 
 def test_matches_the_true_consumption_and_never_decreases():
@@ -118,8 +141,10 @@ def test_isg_down_all_evening_loses_that_day():
 
 def test_no_reading_after_midnight():
     total = CoolingConsumptionTotal()
-    read(total, START + timedelta(days=2, minutes=15))
-    assert total.value is None
+    read(total, ADDED)
+    before = total.value
+    read(total, (ADDED + timedelta(days=1)).replace(hour=0, minute=15))
+    assert total.value == before
 
 
 def test_restart_during_the_day_keeps_the_total():
@@ -136,13 +161,14 @@ def test_restart_in_the_evening_after_failed_readings_still_counts():
     assert total.value == expected()
 
 
-def test_added_in_the_evening_seeds_right_away():
-    added = START + timedelta(days=1, hours=23, minutes=40)
+def test_added_in_the_reading_window_counts_that_day():
+    added = START + timedelta(days=3, hours=23, minutes=40)
+    total = CoolingConsumptionTotal()
+    read(total, added)
+    assert total.value == round(window_12m(added) + window_24h(added), 3)
+    assert total.is_read(added)
     total, _ = run(added=added)
-    want = window_12m(added) + sum(
-        consumption_until_23(START + timedelta(days=d)) for d in range(2, 50)
-    )
-    assert total.value == round(want, 3)
+    assert total.value == expected(added)
 
 
 def test_stored_data_of_the_old_version_is_discarded():
