@@ -18,7 +18,7 @@ from .const import (
     DOMAIN,
     LOGIN_SUCCESS_MARKER,
 )
-from .isg_client import IsgAuthError, IsgClient, IsgConnectionError
+from .isg_client import IsgAuthError, IsgClient, IsgConnectionError, normalize_host
 
 
 def _interval_fields(scan_interval: int, consumption_scan_interval: int) -> dict:
@@ -66,6 +66,7 @@ class IsgConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
+            user_input = {**user_input, CONF_HOST: normalize_host(user_input[CONF_HOST])}
             session = async_create_isg_session(self.hass)
             client = create_client(session, user_input)
             try:
@@ -80,7 +81,12 @@ class IsgConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 # the MAC address identifies the ISG under any host name; the
                 # host is the fallback, and catches entries of older versions
-                self._async_abort_entries_match({CONF_HOST: user_input[CONF_HOST]})
+                # (whose host may be written differently, e.g. with a slash)
+                if any(
+                    normalize_host(entry.data[CONF_HOST]) == user_input[CONF_HOST]
+                    for entry in self._async_current_entries()
+                ):
+                    return self.async_abort(reason="already_configured")
                 await self.async_set_unique_id(mac or user_input[CONF_HOST])
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(

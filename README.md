@@ -80,7 +80,9 @@ The poll intervals can be changed later: go to **Settings** → **Devices & serv
 
 ### Combining with the Stiebel Eltron ISG integration
 
-If the [Stiebel Eltron ISG integration](https://github.com/pail23/stiebel_eltron_isg_component) is installed too, the cooling switch and sensors of this integration are added to its device automatically, so all values of the heat pump appear on one device page. With several of its devices, the one with the same host is used. This is checked at every start, so it also works if the Stiebel Eltron ISG integration is installed later; the entities keep their entity IDs and history when they move. Without the Stiebel Eltron ISG integration, this integration has its own device.
+This integration has its own device for the ISG. If the [Stiebel Eltron ISG integration](https://github.com/pail23/stiebel_eltron_isg_component) is installed too, the device is linked to its device automatically: this device shows *Connected via* the Stiebel Eltron ISG device, and that one lists this device under its connected devices. With several Stiebel Eltron ISG devices, the one with the same host is used. The link is checked at every start, so it also works if the Stiebel Eltron ISG integration is installed later.
+
+Since Home Assistant 2026.8, a device belongs to a single integration, so the entities of both integrations can't share one device page.
 
 ## Usage
 

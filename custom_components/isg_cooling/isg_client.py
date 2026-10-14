@@ -71,7 +71,18 @@ def _normalize_key(text: str) -> str:
     return re.sub(r"\s+", "", text).replace("–", "-").upper()
 
 
-_MAC_PATTERN = re.compile(r"(?<![0-9A-Fa-f:-])([0-9A-Fa-f]{2}(?:[:-][0-9A-Fa-f]{2}){5})(?![0-9A-Fa-f:-])")
+# the separator after the first pair (\2) has to be used throughout
+_MAC_PATTERN = re.compile(
+    r"(?<![0-9A-Fa-f:-])([0-9A-Fa-f]{2}([:-])[0-9A-Fa-f]{2}(?:\2[0-9A-Fa-f]{2}){4})(?![0-9A-Fa-f:-])"
+)
+
+
+def normalize_host(host: str) -> str:
+    """'  http://ISG.lan/ ' -> 'isg.lan', so the same host is always written
+    the same way"""
+    host = host.strip()
+    host = re.sub(r"^https?://", "", host, flags=re.IGNORECASE)
+    return host.rstrip("/").lower()
 
 
 def is_mac(value: str | None) -> bool:
@@ -128,7 +139,7 @@ class IsgClient:
         login_marker: str = LOGIN_SUCCESS_MARKER,
     ) -> None:
         self._session = session
-        self._base = f"http://{host.rstrip('/')}/"
+        self._base = f"http://{normalize_host(host)}/"
         self._username = username
         self._password = password
         self._login_marker = login_marker

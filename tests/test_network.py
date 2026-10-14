@@ -1,8 +1,8 @@
-"""MAC address of the ISG (PROFIL > NETZWERK), used as its unique ID."""
+"""MAC address (PROFIL > NETZWERK) and host of the ISG, which identify it."""
 import asyncio
 
 from conftest import read_fixture
-from isg_cooling.isg_client import IsgClient, _find_mac, is_mac
+from isg_cooling.isg_client import IsgClient, _find_mac, is_mac, normalize_host
 
 
 def test_mac_from_the_network_page():
@@ -30,3 +30,22 @@ def test_is_mac():
     assert not is_mac("192.168.1.50")
     assert not is_mac("isg.lan:8080")
     assert not is_mac(None)
+    assert is_mac("00-1a-2b-3c-4d-5e")
+    # one separator throughout
+    assert not is_mac("00:1a-2b:3c-4d:5e")
+    assert _find_mac("MAC 00:1a-2b:3c-4d:5e") is None
+
+
+def test_normalize_host():
+    assert normalize_host("isg.lan") == "isg.lan"
+    assert normalize_host("isg.lan/") == "isg.lan"
+    assert normalize_host("  ISG.lan ") == "isg.lan"
+    assert normalize_host("http://isg.lan/") == "isg.lan"
+    assert normalize_host("HTTPS://192.168.1.50") == "192.168.1.50"
+    assert normalize_host("isg.lan:8080") == "isg.lan:8080"
+    # the Stiebel Eltron ISG integration's device has configuration_url http://<host>
+    assert normalize_host("http://isg.lan") == normalize_host("isg.lan/")
+
+
+def test_client_uses_the_normalized_host():
+    assert IsgClient(None, "http://ISG.lan/", "", "")._base == "http://isg.lan/"

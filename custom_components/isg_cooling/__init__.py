@@ -1,6 +1,7 @@
 """ISG cooling integration for LWZ heat pumps."""
 from __future__ import annotations
 
+import inspect
 import logging
 from dataclasses import dataclass
 from datetime import timedelta
@@ -11,7 +12,6 @@ import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -35,6 +35,7 @@ from .isg_client import (
     IsgConnectionError,
     IsgCoolingConsumption,
     is_mac,
+    normalize_host,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -49,27 +50,20 @@ class IsgRuntimeData:
     client: IsgClient
     cooling: DataUpdateCoordinator[bool]
     consumption: DataUpdateCoordinator[IsgCoolingConsumption]
-    # the device the entities belong to, see _async_setup_device()
+    # the device the entities belong to, see _async_device_info()
     device_info: DeviceInfo
+
+
+# Home Assistant 2026.8 and later link devices by device id (via_device_id),
+# older versions by an identifier of the other device (via_device)
+_HAS_VIA_DEVICE_ID = (
+    "via_device_id" in inspect.signature(dr.DeviceRegistry.async_get_or_create).parameters
+)
 
 
 def get_option(entry: ConfigEntry, key: str, default: Any) -> Any:
     """value from the options flow, else from the setup, else the default"""
     return entry.options.get(key, entry.data.get(key, default))
-
-
-def _own_device_info(entry: ConfigEntry) -> DeviceInfo:
-    """own device for the ISG, if it isn't linked to another one"""
-    info = DeviceInfo(
-        identifiers={(DOMAIN, entry.entry_id)},
-        name=entry.title,
-        manufacturer="Stiebel Eltron",
-        model="ISG",
-        configuration_url=f"http://{entry.data[CONF_HOST]}/",
-    )
-    if is_mac(entry.unique_id):
-        info["connections"] = {(CONNECTION_NETWORK_MAC, entry.unique_id)}
-    return info
 
 
 @callback
@@ -83,46 +77,45 @@ def _async_find_isg_device(hass: HomeAssistant, entry: ConfigEntry) -> dr.Device
     ]
     if len(devices) == 1:
         return devices[0]
-    host = entry.data[CONF_HOST].rstrip("/")
+    host = normalize_host(entry.data[CONF_HOST])
     matching = [
         device
         for device in devices
-        if (device.configuration_url or "").rstrip("/") == f"http://{host}"
+        if normalize_host(device.configuration_url or "") == host
     ]
     if len(matching) == 1:
         return matching[0]
     if devices:
         _LOGGER.info(
-            "Several Stiebel Eltron ISG devices, none with host %s: using an own device",
-            host,
+            "Several Stiebel Eltron ISG devices, none with host %s: not linked", host
         )
     return None
 
 
 @callback
-def _async_setup_device(hass: HomeAssistant, entry: ConfigEntry) -> DeviceInfo:
-    """the device of the entities: the one of the Stiebel Eltron ISG
-    integration if there is one, else an own device
+def _async_device_info(hass: HomeAssistant, entry: ConfigEntry) -> DeviceInfo:
+    """own device for the ISG, connected via the device of the Stiebel Eltron
+    ISG integration if there is one
 
-    Also moves the entities when the device changed. Leaving a device makes
-    Home Assistant delete the entities of this entry that are still on it,
-    so the entities are moved to the new device first.
+    Since Home Assistant 2026.8 a device belongs to a single config entry, so
+    the entities can't join the device of that integration. "Connected via"
+    links the two devices instead, in both device pages.
     """
-    dev_reg = dr.async_get(hass)
-    info = _own_device_info(entry)
+    info = DeviceInfo(
+        identifiers={(DOMAIN, entry.entry_id)},
+        name=entry.title,
+        manufacturer="Stiebel Eltron",
+        model="ISG",
+        configuration_url=f"http://{normalize_host(entry.data[CONF_HOST])}/",
+    )
+    if is_mac(entry.unique_id):
+        info["connections"] = {(CONNECTION_NETWORK_MAC, entry.unique_id)}
     isg_device = _async_find_isg_device(hass, entry)
     if isg_device is not None:
-        # only the identifiers: the entities join that device as it is
-        info = DeviceInfo(identifiers=isg_device.identifiers)
-    device = dev_reg.async_get_or_create(config_entry_id=entry.entry_id, **info)
-
-    ent_reg = er.async_get(hass)
-    for entity in er.async_entries_for_config_entry(ent_reg, entry.entry_id):
-        if entity.device_id != device.id:
-            ent_reg.async_update_entity(entity.entity_id, device_id=device.id)
-    for old in dr.async_entries_for_config_entry(dev_reg, entry.entry_id):
-        if old.id != device.id:
-            dev_reg.async_update_device(old.id, remove_config_entry_id=entry.entry_id)
+        if _HAS_VIA_DEVICE_ID:
+            info["via_device_id"] = isg_device.id
+        else:
+            info["via_device"] = next(iter(isg_device.identifiers))
     return info
 
 
@@ -194,7 +187,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await _async_use_mac_as_unique_id(hass, entry, client)
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = IsgRuntimeData(
-        client, cooling, consumption, _async_setup_device(hass, entry)
+        client, cooling, consumption, _async_device_info(hass, entry)
     )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
