@@ -1,7 +1,7 @@
 """Daily cooling total, against a simulated ISG with a rolling 24 h window.
 
 The simulation gives the total only the readings it gets in sensor.py: one
-at setup (also after a restart) and the nightly readings at 00:15, 00:25,
+at setup (also after a restart) and the evening readings at 23:15, 23:25,
 ... - not the regular polling.
 """
 import json
@@ -61,15 +61,23 @@ def run(added=START + timedelta(hours=14, minutes=3), offline=lambda t: False, r
     return total, values
 
 
-def expected(lost_days=()) -> float:
-    """seed at the first midnight + every later day that was read"""
-    first = START + timedelta(days=1)
-    want = window_12m(first.replace(minute=15))
-    day = first + timedelta(days=1)
-    while day + timedelta(minutes=15) <= END:
+def hour_index(t: datetime) -> int:
+    return int((t - START).total_seconds() // 3600)
+
+
+def consumption_until_23(day: datetime) -> float:
+    """23:00 of the day before until 23:00 of this day"""
+    i = hour_index(day.replace(hour=23, minute=0))
+    return sum(BUCKETS[i - 24:i])
+
+
+def expected(first_day=START, lost_days=()) -> float:
+    """seed at the first evening reading + every later day that was read"""
+    want = window_12m(first_day.replace(hour=23, minute=15))
+    day = first_day + timedelta(days=1)
+    while day.replace(hour=23, minute=15) <= END:
         if day.date() not in lost_days:
-            i = int((day - START).total_seconds() // 3600)
-            want += sum(BUCKETS[i - 24:i])
+            want += consumption_until_23(day)
         day += timedelta(days=1)
     return round(want, 3)
 
@@ -86,16 +94,32 @@ def test_matches_the_true_consumption_and_never_decreases():
     assert total.value == expected()
 
 
-def test_retry_after_isg_down_at_00_15():
+def test_each_day_is_booked_on_its_own_date():
+    # only the last hour (23:00-24:00) moves to the next day
+    total = CoolingConsumptionTotal()
+    day = START + timedelta(days=3)
+    read(total, day.replace(hour=23, minute=15))
+    before = total.value
+    read(total, (day + timedelta(days=1)).replace(hour=23, minute=15))
+    assert round(total.value - before, 3) == round(consumption_until_23(day + timedelta(days=1)), 3)
+
+
+def test_retry_after_isg_down_at_23_15():
     day = (START + timedelta(days=5)).date()
     total, _ = run(offline=lambda t: t.date() == day and t.minute < 20)
     assert total.value == expected()
 
 
-def test_isg_down_all_night_loses_that_day():
+def test_isg_down_all_evening_loses_that_day():
     day = (START + timedelta(days=9)).date()
-    total, _ = run(offline=lambda t: t.date() == day and t.hour == 0)
-    assert total.value == expected({day})
+    total, _ = run(offline=lambda t: t.date() == day and t.hour == 23)
+    assert total.value == expected(lost_days={day})
+
+
+def test_no_reading_after_midnight():
+    total = CoolingConsumptionTotal()
+    read(total, START + timedelta(days=2, minutes=15))
+    assert total.value is None
 
 
 def test_restart_during_the_day_keeps_the_total():
@@ -103,18 +127,22 @@ def test_restart_during_the_day_keeps_the_total():
     assert total.value == expected()
 
 
-def test_restart_at_night_after_failed_readings_still_counts():
+def test_restart_in_the_evening_after_failed_readings_still_counts():
     day = START + timedelta(days=12)
     total, _ = run(
-        offline=lambda t: t.date() == day.date() and t.hour == 0 and t.minute < 50,
-        restarts={day + timedelta(minutes=50)},
+        offline=lambda t: t.date() == day.date() and t.hour == 23 and t.minute < 50,
+        restarts={day.replace(hour=23, minute=50)},
     )
     assert total.value == expected()
 
 
-def test_added_at_night_seeds_right_away():
-    total, _ = run(added=START + timedelta(days=1, minutes=40))
-    assert total.value == expected()
+def test_added_in_the_evening_seeds_right_away():
+    added = START + timedelta(days=1, hours=23, minutes=40)
+    total, _ = run(added=added)
+    want = window_12m(added) + sum(
+        consumption_until_23(START + timedelta(days=d)) for d in range(2, 50)
+    )
+    assert total.value == round(want, 3)
 
 
 def test_stored_data_of_the_old_version_is_discarded():

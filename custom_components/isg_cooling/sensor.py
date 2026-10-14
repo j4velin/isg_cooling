@@ -92,8 +92,8 @@ class IsgCoolingConsumption24hSensor(CoordinatorEntity, IsgCoolingConsumptionSen
 class IsgCoolingConsumptionTotalSensor(IsgCoolingConsumptionSensor, RestoreSensor):
     """lifetime total, the ISG has no such value - see consumption_total.py
 
-    Use this one for the energy dashboard. It changes once a day, shortly
-    after midnight. Not a coordinator listener, so it doesn't keep the
+    Use this one for the energy dashboard. It changes once a day, at about
+    23:15. Not a coordinator listener, so it doesn't keep the
     coordinator polling: it fetches the page itself for the daily reading.
     """
 
