@@ -20,6 +20,9 @@ VAL_COOLING = "val73"
 # Servicewelt path "INFO > ENERGIEBILANZ" (english: "INFO > ENERGY FOOTPRINT")
 ENERGY_PAGE_PATH = "?s=1,2"
 
+# Servicewelt path "PROFIL > NETZWERK", shows the MAC address of the ISG
+NETWORK_PAGE_PATH = "?s=5,0"
+
 
 @dataclass(frozen=True)
 class IsgTexts:

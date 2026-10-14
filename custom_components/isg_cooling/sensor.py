@@ -18,7 +18,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import dt as dt_util
 
-from . import IsgRuntimeData
+from . import IsgRuntimeData, device_info
 from .consumption_total import CoolingConsumptionTotal
 from .const import DOMAIN
 from .isg_client import IsgCoolingConsumption
@@ -55,6 +55,7 @@ class IsgCoolingConsumptionSensor(CoordinatorEntity, SensorEntity):
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_{self._attr_translation_key}"
+        self._attr_device_info = device_info(entry)
 
 
 class IsgCoolingConsumption24hSensor(IsgCoolingConsumptionSensor):

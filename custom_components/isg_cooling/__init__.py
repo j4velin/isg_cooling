@@ -11,6 +11,7 @@ import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
+from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
@@ -30,6 +31,7 @@ from .isg_client import (
     IsgClient,
     IsgConnectionError,
     IsgCoolingConsumption,
+    is_mac,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -49,6 +51,20 @@ class IsgRuntimeData:
 def get_option(entry: ConfigEntry, key: str, default: Any) -> Any:
     """value from the options flow, else from the setup, else the default"""
     return entry.options.get(key, entry.data.get(key, default))
+
+
+def device_info(entry: ConfigEntry) -> DeviceInfo:
+    """one device per ISG, so its entities appear together"""
+    info = DeviceInfo(
+        identifiers={(DOMAIN, entry.entry_id)},
+        name=entry.title,
+        manufacturer="Stiebel Eltron",
+        model="ISG",
+        configuration_url=f"http://{entry.data[CONF_HOST]}/",
+    )
+    if is_mac(entry.unique_id):
+        info["connections"] = {(CONNECTION_NETWORK_MAC, entry.unique_id)}
+    return info
 
 
 def async_create_isg_session(hass: HomeAssistant) -> aiohttp.ClientSession:
@@ -116,6 +132,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Assistant retries the whole setup later
     await cooling.async_config_entry_first_refresh()
     await consumption.async_config_entry_first_refresh()
+    await _async_use_mac_as_unique_id(hass, entry, client)
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = IsgRuntimeData(
         client, cooling, consumption
@@ -130,6 +147,33 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unloaded:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unloaded
+
+
+async def _async_use_mac_as_unique_id(
+    hass: HomeAssistant, entry: ConfigEntry, client: IsgClient
+) -> None:
+    """older versions identified the ISG by its host, so the same ISG could
+    be added twice, e.g. as isg.lan and by its IP address"""
+    if is_mac(entry.unique_id):
+        return
+    try:
+        mac = await client.async_get_mac()
+    except (IsgConnectionError, IsgAuthError) as err:
+        _LOGGER.debug("MAC address not readable, trying again next start: %s", err)
+        return
+    if mac is None:
+        return
+    if any(
+        other.unique_id == mac
+        for other in hass.config_entries.async_entries(DOMAIN)
+        if other.entry_id != entry.entry_id
+    ):
+        _LOGGER.warning(
+            "The ISG at %s is set up twice, remove one of the entries",
+            entry.data[CONF_HOST],
+        )
+        return
+    hass.config_entries.async_update_entry(entry, unique_id=mac)
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:

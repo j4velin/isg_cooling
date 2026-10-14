@@ -16,6 +16,7 @@ from .const import (
     ENERGY_PAGE_PATH,
     ISG_TEXTS,
     LOGIN_SUCCESS_MARKER,
+    NETWORK_PAGE_PATH,
     VAL_COOLING,
     IsgTexts,
 )
@@ -68,6 +69,22 @@ def _parse_energy(text: str) -> float | None:
 def _normalize_key(text: str) -> str:
     """'KÜHLEN 1–24 h' -> 'KÜHLEN1-24H'"""
     return re.sub(r"\s+", "", text).replace("–", "-").upper()
+
+
+_MAC_PATTERN = re.compile(r"(?<![0-9A-Fa-f:-])([0-9A-Fa-f]{2}(?:[:-][0-9A-Fa-f]{2}){5})(?![0-9A-Fa-f:-])")
+
+
+def is_mac(value: str | None) -> bool:
+    """True for a MAC address like 00:11:22:33:44:55"""
+    return value is not None and _MAC_PATTERN.fullmatch(value) is not None
+
+
+def _find_mac(html: str) -> str | None:
+    """the MAC address on the page, lower case with colons"""
+    match = _MAC_PATTERN.search(html)
+    if match is None:
+        return None
+    return match.group(1).replace("-", ":").lower()
 
 
 def _check_save_answer(answer: str) -> None:
@@ -251,6 +268,10 @@ class IsgClient:
             last_12m=values.get(texts.key_cooling_12m),
             last_prev_12m=values.get(texts.key_cooling_prev_12m),
         )
+
+    async def async_get_mac(self) -> str | None:
+        """MAC address from PROFIL > NETZWERK, None if not shown"""
+        return _find_mac(await self._async_get_page(NETWORK_PAGE_PATH))
 
     async def async_get_cooling_state(self) -> bool:
         """True, if cooling (KÜHLBETRIEB, val73) is on"""

@@ -11,7 +11,7 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 
-from . import IsgRuntimeData
+from . import IsgRuntimeData, device_info
 from .const import DOMAIN
 from .isg_client import IsgAuthError, IsgClient, IsgConnectionError
 
@@ -40,6 +40,7 @@ class IsgCoolingSwitch(CoordinatorEntity, SwitchEntity):
         super().__init__(coordinator)
         self._client = client
         self._attr_unique_id = f"{entry.entry_id}_val73"
+        self._attr_device_info = device_info(entry)
 
     @property
     def is_on(self) -> bool:

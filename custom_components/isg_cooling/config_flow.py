@@ -18,7 +18,7 @@ from .const import (
     DOMAIN,
     LOGIN_SUCCESS_MARKER,
 )
-from .isg_client import IsgAuthError, IsgConnectionError
+from .isg_client import IsgAuthError, IsgClient, IsgConnectionError
 
 
 def _interval_fields(scan_interval: int, consumption_scan_interval: int) -> dict:
@@ -72,12 +72,16 @@ class IsgConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # read the cooling page instead of only logging in: this also
                 # checks the host when no credentials are set (no login then)
                 await client.async_get_cooling_state()
+                mac = await self._async_get_mac(client)
             except IsgAuthError:
                 errors["base"] = "invalid_auth"
             except IsgConnectionError:
                 errors["base"] = "cannot_connect"
             else:
-                await self.async_set_unique_id(user_input[CONF_HOST])
+                # the MAC address identifies the ISG under any host name; the
+                # host is the fallback, and catches entries of older versions
+                self._async_abort_entries_match({CONF_HOST: user_input[CONF_HOST]})
+                await self.async_set_unique_id(mac or user_input[CONF_HOST])
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(
                     title=f"ISG Cooling ({user_input[CONF_HOST]})",
@@ -89,6 +93,14 @@ class IsgConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user", data_schema=DATA_SCHEMA, errors=errors
         )
+
+    @staticmethod
+    async def _async_get_mac(client: IsgClient) -> str | None:
+        """None if the network page can't be read, the host is used then"""
+        try:
+            return await client.async_get_mac()
+        except IsgConnectionError:
+            return None
 
 
 class IsgOptionsFlow(config_entries.OptionsFlow):
